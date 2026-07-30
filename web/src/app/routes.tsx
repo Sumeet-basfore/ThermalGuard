@@ -39,7 +39,7 @@ function Shell() {
         setOpen={setOpen}
       />
 
-      <main className="lg:ml-[240px] flex-1 flex flex-col min-h-screen bg-[#111318]">
+      <main className="lg:ml-[240px] flex-1 flex flex-col min-h-screen bg-[#111318] overflow-x-hidden">
         <TopHeader pageName={page} onOpenMobileMenu={() => setOpen(true)} />
 
         <div className="flex-1 p-4 lg:p-6 overflow-y-auto">
@@ -70,7 +70,7 @@ function Shell() {
    1. DASHBOARD VIEW (operations_dashboard/code.html)
    ========================================================================= */
 function Dashboard() {
-  const { sensorMetrics, sensorStatus } = useTelemetry();
+  const { sensorMetrics } = useTelemetry();
   const [relayAuto, setRelayAuto] = useState(true);
   const [relayActive, setRelayActive] = useState(true);
   const [buzzerMuted, setBuzzerMuted] = useState(false);
@@ -182,7 +182,7 @@ function Dashboard() {
       </div>
 
       {/* Middle Row: Temperature History Chart & Environmental / Relay Panels */}
-      <div className="col-span-12 lg:col-span-9 bg-[#111318] border border-[#434655] flex flex-col h-[380px]">
+      <div className="col-span-12 lg:col-span-9 bg-[#111318] border border-[#434655] flex flex-col h-[380px] overflow-hidden">
         <div className="px-4 py-3 border-b border-[#434655] flex justify-between items-center">
           <h3 className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#e2e2e9]">
             24h Temperature History (Primary Bus)
@@ -194,10 +194,20 @@ function Dashboard() {
             </span>
           </div>
         </div>
-        <div className="flex-1 p-4 relative bg-[#0c0e13]">
-          <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
-            <path d="M0,80 Q10,75 20,60 T40,65 T60,40 T80,45 T100,30" fill="none" stroke="#2563eb" strokeWidth="1.5" />
-            <path d="M0,80 Q10,75 20,60 T40,65 T60,40 T80,45 T100,30 L100,100 L0,100 Z" fill="url(#grad)" opacity="0.15" />
+        <div className="flex-1 p-4 relative bg-[#0c0e13] overflow-hidden">
+          <svg className="w-full h-full overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+            <path
+              d="M0,240 Q100,225 200,180 T400,195 T600,120 T800,135 T1000,90"
+              fill="none"
+              stroke="#2563eb"
+              strokeWidth="2"
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              d="M0,240 Q100,225 200,180 T400,195 T600,120 T800,135 T1000,90 L1000,300 L0,300 Z"
+              fill="url(#grad)"
+              opacity="0.15"
+            />
             <defs>
               <linearGradient id="grad" x1="0%" x2="0%" y1="0%" y2="100%">
                 <stop offset="0%" style={{ stopColor: "#2563eb", stopOpacity: 1 }} />
@@ -207,7 +217,7 @@ function Dashboard() {
           </svg>
 
           {/* Marker Tooltip */}
-          <div className="absolute left-[60%] top-[35%] flex flex-col items-center">
+          <div className="absolute left-[60%] top-[35%] flex flex-col items-center pointer-events-none">
             <div className="w-3 h-3 bg-white border-2 border-[#2563eb] rounded-full mb-1"></div>
             <div className="bg-[#33353a] border border-[#434655] p-2 rounded text-[10px] font-['JetBrains_Mono'] text-[#e2e2e9]">
               VAL: {sensorMetrics.hotspotTemp}°C<br />
@@ -378,7 +388,7 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="col-span-12 lg:col-span-6 bg-[#111318] border border-[#434655] flex flex-col">
+      <div className="col-span-12 lg:col-span-6 bg-[#111318] border border-[#434655] flex flex-col overflow-hidden">
         <div className="px-4 py-3 border-b border-[#434655] flex justify-between items-center">
           <h3 className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#e2e2e9]">
             Recent Event Timeline
@@ -390,34 +400,34 @@ function Dashboard() {
           <table className="w-full text-left font-[Inter] text-[13px]">
             <thead className="bg-[#1a1b21] font-[Inter] text-[10px] font-bold text-[#c3c6d7] uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-2 border-b border-[#434655]">Timestamp</th>
-                <th className="px-4 py-2 border-b border-[#434655]">Source</th>
+                <th className="px-4 py-2 border-b border-[#434655] whitespace-nowrap">Timestamp</th>
+                <th className="px-4 py-2 border-b border-[#434655] whitespace-nowrap">Source</th>
                 <th className="px-4 py-2 border-b border-[#434655]">Event</th>
-                <th className="px-4 py-2 border-b border-[#434655]">Severity</th>
+                <th className="px-4 py-2 border-b border-[#434655] text-right whitespace-nowrap">Severity</th>
               </tr>
             </thead>
             <tbody className="font-['JetBrains_Mono'] text-[12px] divide-y divide-[#434655]">
               <tr className="hover:bg-[#1e1f25] transition-colors">
-                <td className="px-4 py-2">14:52:01</td>
-                <td className="px-4 py-2 text-[#b4c5ff]">GPIO_18</td>
+                <td className="px-4 py-2 whitespace-nowrap">14:52:01</td>
+                <td className="px-4 py-2 text-[#b4c5ff] whitespace-nowrap">GPIO_18</td>
                 <td className="px-4 py-2 text-[#e2e2e9]">State change: HIGH (Auto)</td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2 text-right whitespace-nowrap">
                   <span className="px-1.5 py-0.5 bg-[#33353a] rounded text-[10px] text-[#e2e2e9]">INFO</span>
                 </td>
               </tr>
               <tr className="hover:bg-[#1e1f25] transition-colors">
-                <td className="px-4 py-2">14:48:14</td>
-                <td className="px-4 py-2 text-[#ecf0ff]">SYS_CORE</td>
+                <td className="px-4 py-2 whitespace-nowrap">14:48:14</td>
+                <td className="px-4 py-2 text-[#ecf0ff] whitespace-nowrap">SYS_CORE</td>
                 <td className="px-4 py-2 text-[#e2e2e9]">Watchdog timer reset</td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2 text-right whitespace-nowrap">
                   <span className="px-1.5 py-0.5 bg-[#33353a] rounded text-[10px] text-[#e2e2e9]">DEBUG</span>
                 </td>
               </tr>
               <tr className="hover:bg-[#1e1f25] transition-colors">
-                <td className="px-4 py-2">14:45:00</td>
-                <td className="px-4 py-2 text-[#ffb4ab]">THRM_SENS</td>
+                <td className="px-4 py-2 whitespace-nowrap">14:45:00</td>
+                <td className="px-4 py-2 text-[#ffb4ab] whitespace-nowrap">THRM_SENS</td>
                 <td className="px-4 py-2 text-[#ffb4ab]">Threshold breach &gt; 72.0°C</td>
-                <td className="px-4 py-2">
+                <td className="px-4 py-2 text-right whitespace-nowrap">
                   <span className="px-1.5 py-0.5 bg-[#93000a] text-[#ffdad6] rounded text-[10px]">CRITICAL</span>
                 </td>
               </tr>
@@ -512,7 +522,7 @@ function Analytics() {
 
       {/* Main Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-[#111318] border border-[#434655] p-6">
+        <div className="lg:col-span-2 bg-[#111318] border border-[#434655] p-6 overflow-hidden">
           <div className="flex justify-between items-center mb-6">
             <h3 className="font-[Inter] text-[18px] font-semibold text-[#e2e2e9] flex items-center gap-2">
               <span className="w-2.5 h-2.5 bg-[#b4c5ff] rounded-full"></span>
@@ -526,9 +536,15 @@ function Analytics() {
           </div>
 
           <div className="relative h-[360px] w-full bg-[#0c0e13] border border-[#434655] overflow-hidden rounded">
-            <svg className="w-full h-full" preserveAspectRatio="none">
-              <line x1="0" x2="100%" y1="60" y2="60" stroke="#ffb4ab" strokeDasharray="3 3" strokeWidth="1.5" />
-              <path d="M0 280 L50 270 L100 290 L150 260 L200 240 L250 210 L300 220 L350 180 L400 190 L450 140 L500 130 L550 90 L600 110 L650 130 L700 150 L750 170 L800 190 L850 210 L900 230 L1000 240" fill="none" stroke="#2563eb" strokeWidth="2" />
+            <svg className="w-full h-full overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+              <line x1="0" x2="1000" y1="60" y2="60" stroke="#ffb4ab" strokeDasharray="4 4" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              <path
+                d="M0 280 L50 270 L100 290 L150 260 L200 240 L250 210 L300 220 L350 180 L400 190 L450 140 L500 130 L550 90 L600 110 L650 130 L700 150 L750 170 L800 190 L850 210 L900 230 L1000 240"
+                fill="none"
+                stroke="#2563eb"
+                strokeWidth="2"
+                vectorEffect="non-scaling-stroke"
+              />
             </svg>
             <div className="absolute left-4 top-[50px] font-['JetBrains_Mono'] text-[10px] text-[#ffb4ab] font-bold">
               10.0A [OVERLOAD LIMIT]
