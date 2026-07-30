@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ThermalGuard | Hardware Registry</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;450&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111318;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #434655;
+            border-radius: 2px;
+        }
+        .bus-activity-line {
+            border-left: 2px solid #2563eb;
+            animation: pulse-border 2s infinite;
+        }
+        @keyframes pulse-border {
+            0% { border-left-color: #2563eb; }
+            50% { border-left-color: #111318; }
+            100% { border-left-color: #2563eb; }
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#434751",
+                        "surface-tint": "#b4c5ff",
+                        "on-surface-variant": "#c3c6d7",
+                        "inverse-primary": "#0053db",
+                        "on-primary": "#002a78",
+                        "on-tertiary-fixed": "#141c2a",
+                        "background": "#111318",
+                        "error-container": "#93000a",
+                        "surface-container-highest": "#33353a",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "secondary-fixed-dim": "#c3c6d3",
+                        "outline": "#8d90a0",
+                        "on-tertiary": "#29303f",
+                        "surface-container": "#1e1f25",
+                        "primary-container": "#2563eb",
+                        "on-secondary": "#2c303a",
+                        "on-secondary-fixed": "#181c25",
+                        "primary-fixed": "#dbe1ff",
+                        "tertiary-container": "#666d7e",
+                        "on-background": "#e2e2e9",
+                        "outline-variant": "#434655",
+                        "error": "#ffb4ab",
+                        "tertiary": "#c0c6da",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-error-container": "#ffdad6",
+                        "surface": "#111318",
+                        "surface-container-low": "#1a1b21",
+                        "surface-container-high": "#282a2f",
+                        "tertiary-fixed-dim": "#c0c6da",
+                        "on-tertiary-container": "#ecf0ff",
+                        "primary": "#b4c5ff",
+                        "on-secondary-container": "#b5b8c4",
+                        "surface-bright": "#37393f",
+                        "inverse-surface": "#e2e2e9",
+                        "on-tertiary-fixed-variant": "#404757",
+                        "surface-variant": "#33353a",
+                        "on-surface": "#e2e2e9",
+                        "surface-dim": "#111318",
+                        "secondary": "#c3c6d3",
+                        "surface-container-lowest": "#0c0e13",
+                        "on-error": "#690005",
+                        "secondary-fixed": "#dfe2ef",
+                        "secondary-container": "#454953",
+                        "on-primary-container": "#eeefff",
+                        "on-primary-fixed": "#00174b",
+                        "tertiary-fixed": "#dce2f6",
+                        "inverse-on-surface": "#2e3036"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "sidebar-width": "240px",
+                        "panel-gap": "1px",
+                        "margin-desktop": "24px",
+                        "margin-mobile": "16px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "body-sm": ["Inter"],
+                        "code-table": ["JetBrains Mono"],
+                        "label-caps": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "title-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "mono-data": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "code-table": ["13px", {"lineHeight": "16px", "fontWeight": "450"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "title-sm": ["18px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "mono-data": ["12px", {"lineHeight": "14px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-full w-sidebar-width border-r border-outline-variant bg-surface fixed left-0 top-0 z-50">
+<div class="p-6 flex flex-col gap-1">
+<span class="font-headline-md text-headline-md font-bold text-on-surface">ThermalGuard</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant opacity-70">v2.4</span>
+</div>
+<nav class="flex-1 px-3 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">thermostat</span>
+<span class="font-body-md text-body-md">Thermal Monitor</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">notifications_active</span>
+<span class="font-body-md text-body-md">Alerts</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-body-md text-body-md">Logs</span>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface font-semibold border-l-2 border-primary-container bg-surface-container-high transition-all duration-150" href="#">
+<span class="material-symbols-outlined">developer_board</span>
+<span class="font-body-md text-body-md">Devices</span>
+</a>
+</nav>
+<div class="mt-auto p-4 flex flex-col gap-4 border-t border-outline-variant">
+<div class="bg-surface-container-low p-3 rounded border border-outline-variant">
+<span class="font-label-caps text-label-caps block mb-1 text-primary">Node Status</span>
+<span class="font-body-sm text-body-sm text-on-surface">ESP32 Gateway Node #01</span>
+</div>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">info</span>
+<span class="font-body-md text-body-md">About</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="h-16 w-full fixed top-0 z-40 flex items-center justify-between px-margin-desktop ml-sidebar-width bg-surface border-b border-outline-variant">
+<div class="flex items-center gap-4">
+<h1 class="font-title-sm text-title-sm font-bold text-on-surface">Device Hardware Mapping</h1>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3">
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined">sensors</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined">present_to_all</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined">toggle_on</span>
+</button>
+</div>
+<div class="h-8 w-[1px] bg-outline-variant"></div>
+<button class="font-label-caps text-label-caps bg-primary-container text-on-primary-container px-4 py-2 hover:opacity-90 transition-all active:scale-95">
+                Operator Console
+            </button>
+<span class="font-label-caps text-label-caps text-primary font-bold">Live Mode</span>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-sidebar-width pt-16 min-h-screen bg-background">
+<div class="p-6 grid grid-cols-12 gap-6">
+<!-- Hardware Registry Table (Bento Card) -->
+<section class="col-span-12 lg:col-span-8 bg-surface border border-outline-variant overflow-hidden flex flex-col">
+<div class="p-4 bg-surface-container flex justify-between items-center border-b border-outline-variant">
+<h2 class="font-label-caps text-label-caps text-primary">Connected Hardware Registry</h2>
+<span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20">6 ACTIVE BUSES</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="p-4 font-label-caps text-label-caps text-on-surface-variant">Component</th>
+<th class="p-4 font-label-caps text-label-caps text-on-surface-variant">Interface</th>
+<th class="p-4 font-label-caps text-label-caps text-on-surface-variant">Address/Pin</th>
+<th class="p-4 font-label-caps text-label-caps text-on-surface-variant">Protocol</th>
+<th class="p-4 font-label-caps text-label-caps text-on-surface-variant">State</th>
+</tr>
+</thead>
+<tbody class="font-mono-data text-mono-data divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="p-4 text-on-surface">Thermal Imager (MLX90640)</td>
+<td class="p-4 text-on-secondary-fixed-variant">I2C_BUS_0</td>
+<td class="p-4 text-primary">0x33</td>
+<td class="p-4">I2C (Fast Mode)</td>
+<td class="p-4"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>Connected</span></td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="p-4 text-on-surface">Ambient Temp/Hum (DHT11)</td>
+<td class="p-4 text-on-secondary-fixed-variant">GPIO_4</td>
+<td class="p-4 text-primary">Pin 4</td>
+<td class="p-4">One-Wire</td>
+<td class="p-4"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary"></span>Connected</span></td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="p-4 text-on-surface">System Relay Controller</td>
+<td class="p-4 text-on-secondary-fixed-variant">GPIO_18</td>
+<td class="p-4 text-primary">Pin 18</td>
+<td class="p-4">Digital Out</td>
+<td class="p-4"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary"></span>Connected</span></td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="p-4 text-on-surface">Active Warning Buzzer</td>
+<td class="p-4 text-on-secondary-fixed-variant">GPIO_19</td>
+<td class="p-4 text-primary">Pin 19</td>
+<td class="p-4">PWM</td>
+<td class="p-4"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary"></span>Connected</span></td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="p-4 text-on-surface">Current Sensor (ACS712)</td>
+<td class="p-4 text-on-secondary-fixed-variant">ADC1_CH4</td>
+<td class="p-4 text-primary">ADC 34</td>
+<td class="p-4">Analog In</td>
+<td class="p-4"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-error animate-pulse"></span>Err Code 40</span></td>
+</tr>
+<tr class="hover:bg-surface-container-high transition-colors">
+<td class="p-4 text-on-surface">System Status LCD</td>
+<td class="p-4 text-on-secondary-fixed-variant">I2C_BUS_0</td>
+<td class="p-4 text-primary">0x27</td>
+<td class="p-4">I2C (Standard)</td>
+<td class="p-4"><span class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary"></span>Connected</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- ESP32 Pinout Diagram -->
+<section class="col-span-12 lg:col-span-4 bg-surface border border-outline-variant p-6 flex flex-col items-center">
+<h2 class="font-label-caps text-label-caps text-on-surface-variant self-start mb-6 uppercase tracking-widest">ESP32-WROOM Node Topology</h2>
+<div class="relative w-full max-w-[280px] aspect-[1/1.4] bg-surface-container-lowest border-2 border-outline-variant rounded-xl p-4 flex flex-col">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-4 bg-outline-variant rounded-b-lg"></div>
+<div class="mt-8 mb-4 text-center">
+<span class="font-mono-data text-[10px] text-on-surface-variant block">ESPRESSIF</span>
+<span class="font-mono-data text-body-md font-bold text-on-surface">ESP32-WROOM-32</span>
+</div>
+<div class="flex-1 flex justify-between px-2">
+<!-- Pins Left -->
+<div class="flex flex-col justify-between py-4">
+<div class="flex items-center gap-2 group cursor-help" title="GPIO 4: DHT11">
+<div class="w-4 h-1.5 bg-primary rounded-sm"></div>
+<span class="font-mono-data text-[10px] text-primary">P4</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-4 h-1.5 bg-outline-variant rounded-sm"></div>
+<span class="font-mono-data text-[10px] text-on-surface-variant">P5</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-4 h-1.5 bg-outline-variant rounded-sm"></div>
+<span class="font-mono-data text-[10px] text-on-surface-variant">P13</span>
+</div>
+<div class="flex items-center gap-2 group cursor-help" title="GPIO 18: Relay">
+<div class="w-4 h-1.5 bg-primary rounded-sm"></div>
+<span class="font-mono-data text-[10px] text-primary">P18</span>
+</div>
+<div class="flex items-center gap-2 group cursor-help" title="GPIO 19: Buzzer">
+<div class="w-4 h-1.5 bg-primary rounded-sm"></div>
+<span class="font-mono-data text-[10px] text-primary">P19</span>
+</div>
+</div>
+<!-- Main IC Area -->
+<div class="w-20 bg-surface-container-highest/20 border border-outline-variant rounded flex items-center justify-center m-2">
+<span class="material-symbols-outlined text-outline-variant opacity-20 text-4xl">memory</span>
+</div>
+<!-- Pins Right -->
+<div class="flex flex-col justify-between py-4 items-end">
+<div class="flex items-center gap-2 group cursor-help" title="ADC 34: ACS712">
+<span class="font-mono-data text-[10px] text-error">P34</span>
+<div class="w-4 h-1.5 bg-error rounded-sm"></div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-mono-data text-[10px] text-on-surface-variant">P35</span>
+<div class="w-4 h-1.5 bg-outline-variant rounded-sm"></div>
+</div>
+<div class="flex items-center gap-2 group cursor-help" title="I2C SDA: MLX90640/LCD">
+<span class="font-mono-data text-[10px] text-primary">P21</span>
+<div class="w-4 h-1.5 bg-primary rounded-sm"></div>
+</div>
+<div class="flex items-center gap-2 group cursor-help" title="I2C SCL: MLX90640/LCD">
+<span class="font-mono-data text-[10px] text-primary">P22</span>
+<div class="w-4 h-1.5 bg-primary rounded-sm"></div>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-mono-data text-[10px] text-on-surface-variant">P23</span>
+<div class="w-4 h-1.5 bg-outline-variant rounded-sm"></div>
+</div>
+</div>
+</div>
+<div class="p-2 border-t border-outline-variant mt-auto">
+<div class="flex justify-between items-center">
+<span class="text-[9px] font-label-caps text-on-secondary-fixed-variant">NODE_01_PRO</span>
+<div class="flex gap-1">
+<div class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(37,99,235,0.8)]"></div>
+<div class="w-1.5 h-1.5 rounded-full bg-on-secondary-fixed-variant"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-6 w-full grid grid-cols-2 gap-2">
+<div class="p-2 bg-surface-container-low border border-outline-variant rounded text-center">
+<span class="block font-label-caps text-[9px] text-on-surface-variant">Core Temp</span>
+<span class="font-mono-data text-body-sm text-primary">42.8°C</span>
+</div>
+<div class="p-2 bg-surface-container-low border border-outline-variant rounded text-center">
+<span class="block font-label-caps text-[9px] text-on-surface-variant">RAM Usage</span>
+<span class="font-mono-data text-body-sm text-primary">64%</span>
+</div>
+</div>
+</section>
+<!-- Communication Log (Terminal Box) -->
+<section class="col-span-12 bg-surface border border-outline-variant flex flex-col h-64">
+<div class="px-4 py-2 bg-surface-container border-b border-outline-variant flex items-center gap-4">
+<div class="flex gap-1.5">
+<div class="w-2 h-2 rounded-full bg-error/40"></div>
+<div class="w-2 h-2 rounded-full bg-secondary-container"></div>
+<div class="w-2 h-2 rounded-full bg-primary/40"></div>
+</div>
+<h2 class="font-label-caps text-label-caps text-on-surface-variant">System Bus Monitor</h2>
+<div class="ml-auto flex items-center gap-4">
+<span class="font-mono-data text-[10px] text-on-surface-variant">TX: 12.4kb/s</span>
+<span class="font-mono-data text-[10px] text-on-surface-variant">RX: 88.1kb/s</span>
+<button class="material-symbols-outlined text-sm hover:text-primary">delete_sweep</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-4 font-code-table text-code-table bg-surface-container-lowest text-on-surface-variant/80 space-y-1" id="terminal">
+<div class="bus-activity-line pl-2 flex gap-4">
+<span class="text-on-secondary-fixed-variant whitespace-nowrap">[14:02:22.001]</span>
+<span class="text-primary font-bold">[I2C_0]</span>
+<span class="text-on-surface">SCAN: Found device at 0x33 (MLX90640)</span>
+</div>
+<div class="pl-2 flex gap-4 opacity-60">
+<span class="text-on-secondary-fixed-variant whitespace-nowrap">[14:02:22.145]</span>
+<span class="text-secondary font-bold">[SPI_1]</span>
+<span>MOSI >> 0xAF 0x00 0xFF 0x12</span>
+</div>
+<div class="pl-2 flex gap-4">
+<span class="text-on-secondary-fixed-variant whitespace-nowrap">[14:02:22.312]</span>
+<span class="text-primary font-bold">[I2C_0]</span>
+<span class="text-on-surface">RD: 0x33 >> Payload [64 bytes] CRC OK</span>
+</div>
+<div class="pl-2 flex gap-4 text-error">
+<span class="text-on-secondary-fixed-variant whitespace-nowrap">[14:02:22.450]</span>
+<span class="font-bold">[ADC_1]</span>
+<span>ERR: Channel 34 impedance out of range. Check connection.</span>
+</div>
+<div class="pl-2 flex gap-4">
+<span class="text-on-secondary-fixed-variant whitespace-nowrap">[14:02:22.600]</span>
+<span class="text-primary font-bold">[UART_0]</span>
+<span class="text-on-surface">AT+CONNECT=SSID_MAIN... OK</span>
+</div>
+<div class="pl-2 flex gap-4 opacity-60">
+<span class="text-on-secondary-fixed-variant whitespace-nowrap">[14:02:22.889]</span>
+<span class="text-secondary font-bold">[PWM_G]</span>
+<span>FREQ_UPDATE: GPIO 19 set to 2400Hz (Duty: 10%)</span>
+</div>
+<div class="pl-2 flex gap-4">
+<span class="text-on-secondary-fixed-variant whitespace-nowrap">[14:02:23.011]</span>
+<span class="text-primary font-bold">[I2C_0]</span>
+<span class="text-on-surface">WR: 0x27 << "TEMP: 24.1C"</span>
+</div>
+<div class="pl-2 flex gap-4">
+<span class="text-on-secondary-fixed-variant whitespace-nowrap">[14:02:23.155]</span>
+<span class="text-primary font-bold">[I2C_0]</span>
+<span class="text-on-surface">RD: 0x33 >> Payload [64 bytes] CRC OK</span>
+</div>
+</div>
+</section>
+<!-- Detailed Mapping Overview (Bento Cards) -->
+<div class="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+<!-- GPIO 4 -->
+<div class="bg-surface-container border border-outline-variant p-4 hover:border-primary transition-colors cursor-default">
+<div class="flex justify-between items-start mb-2">
+<span class="font-mono-data text-body-sm text-primary">GPIO 4</span>
+<span class="material-symbols-outlined text-primary-fixed-dim text-lg">thermometer</span>
+</div>
+<h3 class="font-body-md text-on-surface font-semibold">DHT11</h3>
+<p class="text-[10px] text-on-surface-variant mt-1">One-Wire interface for ambient climate monitoring.</p>
+</div>
+<!-- GPIO 18 -->
+<div class="bg-surface-container border border-outline-variant p-4 hover:border-primary transition-colors cursor-default">
+<div class="flex justify-between items-start mb-2">
+<span class="font-mono-data text-body-sm text-primary">GPIO 18</span>
+<span class="material-symbols-outlined text-primary-fixed-dim text-lg">power_settings_new</span>
+</div>
+<h3 class="font-body-md text-on-surface font-semibold">Relay</h3>
+<p class="text-[10px] text-on-surface-variant mt-1">Digital switch for high-voltage thermal safety cutoffs.</p>
+</div>
+<!-- GPIO 19 -->
+<div class="bg-surface-container border border-outline-variant p-4 hover:border-primary transition-colors cursor-default">
+<div class="flex justify-between items-start mb-2">
+<span class="font-mono-data text-body-sm text-primary">GPIO 19</span>
+<span class="material-symbols-outlined text-primary-fixed-dim text-lg">campaign</span>
+</div>
+<h3 class="font-body-md text-on-surface font-semibold">Buzzer</h3>
+<p class="text-[10px] text-on-surface-variant mt-1">PWM frequency controlled auditory alert system.</p>
+</div>
+<!-- ADC 34 -->
+<div class="bg-surface-container border border-outline-variant p-4 hover:border-error transition-colors cursor-default">
+<div class="flex justify-between items-start mb-2">
+<span class="font-mono-data text-body-sm text-error">ADC 34</span>
+<span class="material-symbols-outlined text-error text-lg">bolt</span>
+</div>
+<h3 class="font-body-md text-on-surface font-semibold">ACS712</h3>
+<p class="text-[10px] text-on-surface-variant mt-1">Analog current monitoring (5A range). <span class="text-error">SIGNAL LOSS.</span></p>
+</div>
+<!-- I2C 0x33 -->
+<div class="bg-surface-container border border-outline-variant p-4 hover:border-primary transition-colors cursor-default">
+<div class="flex justify-between items-start mb-2">
+<span class="font-mono-data text-body-sm text-primary">0x33</span>
+<span class="material-symbols-outlined text-primary-fixed-dim text-lg">grid_view</span>
+</div>
+<h3 class="font-body-md text-on-surface font-semibold">MLX90640</h3>
+<p class="text-[10px] text-on-surface-variant mt-1">I2C 32x24 Far-Infrared Thermal Imaging Sensor.</p>
+</div>
+<!-- I2C 0x27 -->
+<div class="bg-surface-container border border-outline-variant p-4 hover:border-primary transition-colors cursor-default">
+<div class="flex justify-between items-start mb-2">
+<span class="font-mono-data text-body-sm text-primary">0x27</span>
+<span class="material-symbols-outlined text-primary-fixed-dim text-lg">desktop_windows</span>
+</div>
+<h3 class="font-body-md text-on-surface font-semibold">LCD</h3>
+<p class="text-[10px] text-on-surface-variant mt-1">HD44780 controller with I2C PCF8574 adapter.</p>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Micro-interaction for the terminal log
+        const terminal = document.getElementById('terminal');
+        const logs = [
+            { time: "14:02:23.250", bus: "I2C_0", color: "text-primary", msg: "SCAN: OK - All devices present" },
+            { time: "14:02:23.400", bus: "SPI_1", color: "text-secondary", msg: "DMA Transfer Initiated (Buf: 2048)" },
+            { time: "14:02:23.512", bus: "GPIO_4", color: "text-primary", msg: "DHT: DATA READ SUCCESS (T:24.1 H:45%)" },
+            { time: "14:02:23.650", bus: "SYSTEM", color: "text-on-surface", msg: "Heap Check: 144,320 Bytes Free" }
+        ];
+
+        let index = 0;
+        setInterval(() => {
+            const log = logs[index];
+            const div = document.createElement('div');
+            div.className = 'pl-2 flex gap-4 opacity-0 transition-opacity duration-500';
+            div.innerHTML = `
+                <span class="text-on-secondary-fixed-variant whitespace-nowrap">[${new Date().toLocaleTimeString()}.${Math.floor(Math.random()*1000)}]</span>
+                <span class="${log.color} font-bold">[${log.bus}]</span>
+                <span class="text-on-surface">${log.msg}</span>
+            `;
+            terminal.appendChild(div);
+            
+            // Fade in effect
+            setTimeout(() => div.classList.remove('opacity-0'), 10);
+            
+            // Keep terminal scrolled to bottom
+            terminal.scrollTop = terminal.scrollHeight;
+            
+            // Manage log history size
+            if (terminal.children.length > 20) {
+                terminal.removeChild(terminal.firstChild);
+            }
+            
+            index = (index + 1) % logs.length;
+        }, 3000);
+    </script>
+</body></html>

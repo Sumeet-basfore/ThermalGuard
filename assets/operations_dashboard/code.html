@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ThermalGuard Operations Console</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#434751",
+                    "surface-tint": "#b4c5ff",
+                    "on-surface-variant": "#c3c6d7",
+                    "inverse-primary": "#0053db",
+                    "on-primary": "#002a78",
+                    "on-tertiary-fixed": "#141c2a",
+                    "background": "#111318",
+                    "error-container": "#93000a",
+                    "surface-container-highest": "#33353a",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "secondary-fixed-dim": "#c3c6d3",
+                    "outline": "#8d90a0",
+                    "on-tertiary": "#29303f",
+                    "surface-container": "#1e1f25",
+                    "primary-container": "#2563eb",
+                    "on-secondary": "#2c303a",
+                    "on-secondary-fixed": "#181c25",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary-container": "#666d7e",
+                    "on-background": "#e2e2e9",
+                    "outline-variant": "#434655",
+                    "error": "#ffb4ab",
+                    "tertiary": "#c0c6da",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-error-container": "#ffdad6",
+                    "surface": "#111318",
+                    "surface-container-low": "#1a1b21",
+                    "surface-container-high": "#282a2f",
+                    "tertiary-fixed-dim": "#c0c6da",
+                    "on-tertiary-container": "#ecf0ff",
+                    "primary": "#b4c5ff",
+                    "on-secondary-container": "#b5b8c4",
+                    "surface-bright": "#37393f",
+                    "inverse-surface": "#e2e2e9",
+                    "on-tertiary-fixed-variant": "#404757",
+                    "surface-variant": "#33353a",
+                    "on-surface": "#e2e2e9",
+                    "surface-dim": "#111318",
+                    "secondary": "#c3c6d3",
+                    "surface-container-lowest": "#0c0e13",
+                    "on-error": "#690005",
+                    "secondary-fixed": "#dfe2ef",
+                    "secondary-container": "#454953",
+                    "on-primary-container": "#eeefff",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-fixed": "#dce2f6",
+                    "inverse-on-surface": "#2e3036"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "sidebar-width": "240px",
+                    "panel-gap": "1px",
+                    "margin-desktop": "24px",
+                    "margin-mobile": "16px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "body-sm": ["Inter"],
+                    "code-table": ["JetBrains Mono"],
+                    "label-caps": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "title-sm": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "mono-data": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "code-table": ["13px", {"lineHeight": "16px", "fontWeight": "450"}],
+                    "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "title-sm": ["18px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "mono-data": ["12px", {"lineHeight": "14px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0B0D12;
+            color: #E2E2E9;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .panel-border { border: 1px solid #2A3140; }
+        .grid-bg {
+            background-size: 20px 20px;
+            background-image: linear-gradient(to right, #151922 1px, transparent 1px), linear-gradient(to bottom, #151922 1px, transparent 1px);
+        }
+        input:focus { outline: none; border-color: #2563EB !important; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0B0D12; }
+        ::-webkit-scrollbar-thumb { background: #2A3140; }
+        ::-webkit-scrollbar-thumb:hover { background: #434655; }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-hidden h-screen flex">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-full w-sidebar-width border-r border-outline-variant bg-surface fixed left-0 top-0 z-50">
+<div class="p-margin-desktop flex flex-col gap-base">
+<div class="flex items-center gap-3 mb-8">
+<div class="w-8 h-8 bg-primary-container flex items-center justify-center rounded-lg">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">thermostat</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">ThermalGuard</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant opacity-60">v2.4</p>
+</div>
+</div>
+<nav class="flex flex-col gap-1">
+<!-- Dashboard Active -->
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface font-semibold border-l-2 border-primary-container bg-surface-container-high transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">thermostat</span>
+<span class="font-body-md">Thermal Monitor</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-md">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">notifications_active</span>
+<span class="font-body-md">Alerts</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-body-md">Logs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">developer_board</span>
+<span class="font-body-md">Devices</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto p-margin-desktop border-t border-outline-variant">
+<div class="bg-surface-container px-3 py-2 rounded mb-4">
+<p class="font-label-caps text-label-caps text-primary mb-1">NODE STATUS</p>
+<p class="font-mono-data text-mono-data">ESP32 Gateway Node #01</p>
+</div>
+<nav class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">info</span>
+<span class="font-body-md">About</span>
+</a>
+</nav>
+</div>
+</aside>
+<!-- Main Container -->
+<main class="ml-sidebar-width flex-1 flex flex-col h-screen bg-background">
+<!-- TopNavBar -->
+<header class="h-16 w-full flex items-center justify-between px-margin-desktop border-b border-outline-variant bg-surface sticky top-0 z-40">
+<div class="flex items-center gap-4">
+<h2 class="font-title-sm text-title-sm font-bold text-on-surface">Operations Dashboard</h2>
+<div class="h-4 w-[1px] bg-outline-variant"></div>
+<div class="flex items-center gap-2 px-2 py-1 bg-primary/10 rounded">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-caps text-label-caps text-primary">ESP32 ONLINE</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">sensors</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">present_to_all</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">toggle_on</button>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-1.5 border border-outline-variant font-label-caps text-label-caps text-on-surface hover:bg-surface-container transition-colors">Live Mode</button>
+<button class="px-4 py-1.5 bg-primary-container font-label-caps text-label-caps text-on-primary-container hover:opacity-90 transition-opacity">Operator Console</button>
+</div>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<div class="flex-1 overflow-y-auto p-gutter grid grid-cols-12 gap-gutter content-start">
+<!-- Top Row: Security Index & Metrics -->
+<div class="col-span-12 lg:col-span-4 bg-surface panel-border p-4 flex flex-col justify-between relative overflow-hidden">
+<div class="flex justify-between items-start z-10">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">System Security Index</p>
+<p class="font-display-lg text-display-lg text-primary font-mono-data">99.4% <span class="text-title-sm">Pass</span></p>
+</div>
+<span class="material-symbols-outlined text-primary text-4xl" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+<div class="mt-4 z-10">
+<div class="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 99.4%"></div>
+</div>
+<p class="font-label-caps text-label-caps mt-2 text-on-surface-variant">Protocol Integrity: Verified</p>
+</div>
+<!-- Background Decorative Mesh -->
+<div class="absolute right-0 bottom-0 opacity-10 pointer-events-none">
+
+</div>
+</div>
+<div class="col-span-12 lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-gutter">
+<div class="bg-surface panel-border p-4">
+<p class="font-label-caps text-label-caps text-on-surface-variant">HOTSPOT MAX</p>
+<p class="font-display-lg text-display-lg text-on-surface font-mono-data mt-2">74.2<span class="text-body-md ml-1">°C</span></p>
+<p class="font-label-caps text-label-caps text-error mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">trending_up</span> +2.1%
+                    </p>
+</div>
+<div class="bg-surface panel-border p-4">
+<p class="font-label-caps text-label-caps text-on-surface-variant">AMBIENT TEMP</p>
+<p class="font-display-lg text-display-lg text-on-surface font-mono-data mt-2">24.5<span class="text-body-md ml-1">°C</span></p>
+<p class="font-label-caps text-label-caps text-primary mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">image_arrow_up</span> NOMINAL
+                    </p>
+</div>
+<div class="bg-surface panel-border p-4">
+<p class="font-label-caps text-label-caps text-on-surface-variant">LINE CURRENT</p>
+<p class="font-display-lg text-display-lg text-on-surface font-mono-data mt-2">12.8<span class="text-body-md ml-1">A</span></p>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-2">PIN: GPIO 34</p>
+</div>
+<div class="bg-surface panel-border p-4">
+<p class="font-label-caps text-label-caps text-on-surface-variant">HUMIDITY</p>
+<p class="font-display-lg text-display-lg text-on-surface font-mono-data mt-2">42<span class="text-body-md ml-1">%</span></p>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-2">DHT11 Sensor</p>
+</div>
+</div>
+<!-- Middle Row: History & Environment/Relay -->
+<div class="col-span-12 lg:col-span-9 bg-surface panel-border flex flex-col h-[400px]">
+<div class="px-gutter py-4 border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-label-caps text-label-caps">24h Temperature History (Primary Bus)</h3>
+<div class="flex gap-4">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 bg-primary-container"></span>
+<span class="font-label-caps text-label-caps">Node_01_Temp</span>
+</div>
+</div>
+</div>
+<div class="flex-1 p-gutter relative grid-bg">
+<!-- SVG Chart Simulation -->
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 100 100">
+<path d="M0,80 Q10,75 20,60 T40,65 T60,40 T80,45 T100,30" fill="none" stroke="#2563EB" stroke-width="1.5"></path>
+<path d="M0,80 Q10,75 20,60 T40,65 T60,40 T80,45 T100,30 L100,100 L0,100 Z" fill="url(#grad)" opacity="0.1"></path>
+<defs>
+<lineargradient id="grad" x1="0%" x2="0%" y1="0%" y2="100%">
+<stop offset="0%" style="stop-color:#2563EB;stop-opacity:1"></stop>
+<stop offset="100%" style="stop-color:#2563EB;stop-opacity:0"></stop>
+</lineargradient>
+</defs>
+</svg>
+<!-- Tooltip Marker -->
+<div class="absolute left-[60%] top-[40%] flex flex-col items-center">
+<div class="w-3 h-3 bg-white border-2 border-primary-container rounded-full mb-2 shadow-lg"></div>
+<div class="bg-surface-container-highest panel-border p-2 rounded text-[10px] font-mono-data whitespace-nowrap">
+                            VAL: 74.2°C<br/>TS: 14:32:01
+                        </div>
+</div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-3 flex flex-col gap-gutter">
+<!-- Environment Card -->
+<div class="bg-surface panel-border p-4 h-1/2 flex flex-col justify-between">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">DHT11 Environmental</p>
+<div class="flex items-end gap-2 mt-2">
+<span class="font-mono-data text-headline-md">24.5°C</span>
+<span class="font-mono-data text-headline-md opacity-40">/</span>
+<span class="font-mono-data text-headline-md">42% RH</span>
+</div>
+</div>
+<div class="mt-4 space-y-2">
+<div class="flex justify-between font-label-caps text-[10px] text-on-surface-variant">
+<span>Dew Point</span>
+<span class="text-on-surface">11.2°C</span>
+</div>
+<div class="flex justify-between font-label-caps text-[10px] text-on-surface-variant">
+<span>Heat Index</span>
+<span class="text-on-surface">25.1°C</span>
+</div>
+</div>
+</div>
+<!-- Relay Control -->
+<div class="bg-surface panel-border p-4 h-1/2 flex flex-col justify-between">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant">GPIO 18 Relay</p>
+<h4 class="font-title-sm text-title-sm font-bold text-on-surface">Aux Cooling</h4>
+</div>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">power_settings_new</span>
+</div>
+<div class="flex items-center justify-between gap-2 mt-4">
+<div class="flex bg-surface-container-low p-1 rounded w-full">
+<button class="flex-1 text-center py-1 font-label-caps text-label-caps bg-primary-container text-on-primary-container rounded">AUTO</button>
+<button class="flex-1 text-center py-1 font-label-caps text-label-caps text-on-surface-variant">MANUAL</button>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Status:</span>
+<span class="px-2 py-0.5 bg-primary/10 text-primary font-label-caps text-label-caps rounded">ACTIVE</span>
+</div>
+</div>
+</div>
+<!-- Bottom Row: Buzzer, Health, Timeline -->
+<div class="col-span-12 lg:col-span-3 bg-surface panel-border p-4 flex flex-col gap-4">
+<p class="font-label-caps text-label-caps text-on-surface-variant">GPIO 19 Buzzer Alarm</p>
+<div class="flex flex-col gap-3">
+<button class="w-full py-2 bg-surface-container-highest border border-outline-variant font-label-caps text-label-caps text-on-surface hover:bg-outline-variant transition-all" onclick="this.classList.add('bg-error'); setTimeout(()=&gt;this.classList.remove('bg-error'), 500)">TEST ALERT SYSTEM</button>
+<div class="flex items-center justify-between p-3 bg-surface-container-low rounded">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">notifications_off</span>
+<span class="font-body-md">Mute Audio</span>
+</div>
+<div class="relative inline-flex h-5 w-10 items-center rounded-full bg-surface-container-highest">
+<span class="translate-x-1 inline-block h-3 w-3 transform rounded-full bg-on-surface-variant transition"></span>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-4 border-t border-outline-variant">
+<div class="flex justify-between items-center text-[10px] font-mono-data text-error uppercase">
+<span>Current Alert State:</span>
+<span class="animate-pulse">Monitoring</span>
+</div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-3 bg-surface panel-border p-4 flex flex-col gap-4">
+<p class="font-label-caps text-label-caps text-on-surface-variant">Device Health</p>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between mb-1 font-mono-data text-xs">
+<span>CPU Usage</span>
+<span>14%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full">
+<div class="bg-primary h-full rounded-full" style="width: 14%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between mb-1 font-mono-data text-xs">
+<span>SRAM (Free)</span>
+<span>184KB</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full">
+<div class="bg-primary h-full rounded-full" style="width: 65%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between mb-1 font-mono-data text-xs">
+<span>WiFi Signal (RSSI)</span>
+<span>-58 dBm</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-highest rounded-full">
+<div class="bg-primary h-full rounded-full" style="width: 82%"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-6 bg-surface panel-border flex flex-col">
+<div class="px-4 py-3 border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-label-caps text-label-caps">Recent Event Timeline</h3>
+<span class="material-symbols-outlined text-sm text-on-surface-variant cursor-pointer">refresh</span>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-sm text-body-sm">
+<thead class="bg-surface-container-low font-label-caps text-[10px] text-on-surface-variant uppercase tracking-wider">
+<tr>
+<th class="px-4 py-2 border-b border-outline-variant">Timestamp</th>
+<th class="px-4 py-2 border-b border-outline-variant">Source</th>
+<th class="px-4 py-2 border-b border-outline-variant">Event</th>
+<th class="px-4 py-2 border-b border-outline-variant">Severity</th>
+</tr>
+</thead>
+<tbody class="font-mono-data text-[12px] divide-y divide-outline-variant">
+<tr class="hover:bg-surface-container transition-colors">
+<td class="px-4 py-2">14:52:01</td>
+<td class="px-4 py-2 text-primary">GPIO_18</td>
+<td class="px-4 py-2">State change: HIGH (Auto)</td>
+<td class="px-4 py-2"><span class="px-1.5 py-0.5 bg-surface-container-highest rounded text-[10px]">INFO</span></td>
+</tr>
+<tr class="hover:bg-surface-container transition-colors">
+<td class="px-4 py-2">14:48:14</td>
+<td class="px-4 py-2 text-on-tertiary-container">SYS_CORE</td>
+<td class="px-4 py-2">Watchdog timer reset</td>
+<td class="px-4 py-2"><span class="px-1.5 py-0.5 bg-surface-container-highest rounded text-[10px]">DEBUG</span></td>
+</tr>
+<tr class="hover:bg-surface-container transition-colors">
+<td class="px-4 py-2">14:45:00</td>
+<td class="px-4 py-2 text-error">THRM_SENS</td>
+<td class="px-4 py-2">Threshold breach &gt; 72.0°C</td>
+<td class="px-4 py-2"><span class="px-1.5 py-0.5 bg-error-container text-on-error-container rounded text-[10px]">CRITICAL</span></td>
+</tr>
+<tr class="hover:bg-surface-container transition-colors">
+<td class="px-4 py-2">14:30:12</td>
+<td class="px-4 py-2 text-primary">WIFI_DRV</td>
+<td class="px-4 py-2">Re-connected to AP 'MAIN_IND'</td>
+<td class="px-4 py-2"><span class="px-1.5 py-0.5 bg-surface-container-highest rounded text-[10px]">INFO</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Footer / Technical Data Overlay -->
+<footer class="h-8 bg-surface-container-lowest border-t border-outline-variant flex items-center justify-between px-gutter">
+<div class="flex gap-6 items-center">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="font-mono-data text-[10px] text-on-surface-variant uppercase">MTBF: 12,400 hrs</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<span class="font-mono-data text-[10px] text-on-surface-variant uppercase">Firmware: v2.4.1-STABLE</span>
+</div>
+</div>
+<div class="font-mono-data text-[10px] text-on-surface-variant uppercase">
+                LATENCY: 14ms | LAST PKT: 0.2s AGO
+            </div>
+</footer>
+</main>
+<!-- Floating Action Button (FAB) - Suppression Logic: Rendered as primary task is Dashboard -->
+<div class="fixed bottom-gutter right-gutter z-50">
+<button class="w-14 h-14 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">add_alert</span>
+</button>
+</div>
+<script>
+        // Micro-interactions and interactive logic
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('mousedown', () => {
+                btn.style.transform = 'scale(0.97)';
+            });
+            btn.addEventListener('mouseup', () => {
+                btn.style.transform = 'scale(1)';
+            });
+            btn.addEventListener('mouseleave', () => {
+                btn.style.transform = 'scale(1)';
+            });
+        });
+
+        // Simple real-time update simulation
+        setInterval(() => {
+            const val = (74 + Math.random()).toFixed(1);
+            const el = document.querySelector('.font-display-lg.text-on-surface.font-mono-data');
+            if(el) el.innerHTML = `${val}<span class="text-body-md ml-1">°C</span>`;
+        }, 3000);
+    </script>
+</body></html>

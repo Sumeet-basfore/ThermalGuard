@@ -2,21 +2,31 @@
 
 @layer base {
   :root {
-    --bg-main: #0B0D12;
-    --bg-surface: #151922;
-    --border-color: #2A3140;
-    --primary: #2563EB;
-    --success: #16A34A;
-    --warning: #D97706;
-    --danger: #DC2626;
-    --text-main: #F8FAFC;
-    --text-secondary: #94A3B8;
-    --text-muted: #64748B;
+    --background: #111318;
+    --surface: #111318;
+    --surface-container-lowest: #0c0e13;
+    --surface-container-low: #1a1b21;
+    --surface-container: #1e1f25;
+    --surface-container-high: #282a2f;
+    --surface-container-highest: #33353a;
+    --on-surface: #e2e2e9;
+    --on-surface-variant: #c3c6d7;
+    --outline: #8d90a0;
+    --outline-variant: #434655;
+    --primary: #b4c5ff;
+    --primary-container: #2563eb;
+    --on-primary-container: #eeefff;
+    --secondary: #c3c6d3;
+    --secondary-container: #454953;
+    --tertiary: #c0c6da;
+    --tertiary-container: #666d7e;
+    --error: #ffb4ab;
+    --error-container: #93000a;
   }
 
   body {
-    background-color: var(--bg-main);
-    color: var(--text-main);
+    background-color: var(--background);
+    color: var(--on-surface);
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     letter-spacing: -0.01em;
     -webkit-font-smoothing: antialiased;

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ThermalGuard | High-Density Logs</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#c3c6d3",
+                    "error-container": "#93000a",
+                    "surface-container-lowest": "#0c0e13",
+                    "on-secondary": "#2c303a",
+                    "tertiary": "#c0c6da",
+                    "inverse-primary": "#0053db",
+                    "surface-container-highest": "#33353a",
+                    "secondary-container": "#454953",
+                    "on-surface-variant": "#c3c6d7",
+                    "surface-container": "#1e1f25",
+                    "primary-container": "#2563eb",
+                    "surface-tint": "#b4c5ff",
+                    "surface-container-low": "#1a1b21",
+                    "on-error": "#690005",
+                    "surface-dim": "#111318",
+                    "on-secondary-container": "#b5b8c4",
+                    "primary": "#b4c5ff",
+                    "tertiary-container": "#666d7e",
+                    "surface": "#111318",
+                    "outline-variant": "#434655",
+                    "on-primary": "#002a78",
+                    "surface-container-high": "#282a2f",
+                    "on-tertiary-fixed": "#141c2a",
+                    "on-tertiary-container": "#ecf0ff",
+                    "background": "#111318",
+                    "on-secondary-fixed": "#181c25",
+                    "surface-bright": "#37393f",
+                    "primary-fixed": "#dbe1ff",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-fixed-dim": "#c0c6da",
+                    "on-background": "#e2e2e9",
+                    "surface-variant": "#33353a",
+                    "on-primary-fixed": "#00174b",
+                    "error": "#ffb4ab",
+                    "on-tertiary-fixed-variant": "#404757",
+                    "on-tertiary": "#29303f",
+                    "inverse-surface": "#e2e2e9",
+                    "tertiary-fixed": "#dce2f6",
+                    "outline": "#8d90a0",
+                    "inverse-on-surface": "#2e3036",
+                    "on-surface": "#e2e2e9",
+                    "on-secondary-fixed-variant": "#434751",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-primary-container": "#eeefff",
+                    "secondary-fixed-dim": "#c3c6d3",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "secondary-fixed": "#dfe2ef"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "sidebar-width": "240px",
+                    "panel-gap": "1px",
+                    "margin-mobile": "16px",
+                    "gutter": "16px",
+                    "margin-desktop": "24px"
+            },
+            "fontFamily": {
+                    "mono-data": ["JetBrains Mono"],
+                    "code-table": ["JetBrains Mono"],
+                    "body-sm": ["Inter"],
+                    "label-caps": ["Inter"],
+                    "title-sm": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-md": ["Inter"]
+            },
+            "fontSize": {
+                    "mono-data": ["12px", {"lineHeight": "14px", "fontWeight": "400"}],
+                    "code-table": ["13px", {"lineHeight": "16px", "fontWeight": "450"}],
+                    "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "title-sm": ["18px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #0B0D12;
+            color: #e2e2e9;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+            font-size: 20px;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #111318;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2A3140;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #434655;
+        }
+        .table-row-hover:hover {
+            background-color: rgba(67, 70, 85, 0.2);
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-hidden h-screen flex">
+<!-- SideNavBar (from JSON) -->
+<aside class="flex flex-col h-full w-sidebar-width border-r border-outline-variant bg-surface fixed left-0 top-0 z-50">
+<div class="p-margin-desktop space-y-base">
+<div class="flex items-center gap-2 mb-8">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">thermostat</span>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">ThermalGuard</h1>
+<p class="text-[10px] text-outline font-label-caps uppercase tracking-widest">v2.4</p>
+</div>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-caps text-label-caps">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">thermostat</span>
+<span class="font-label-caps text-label-caps">Thermal Monitor</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-label-caps text-label-caps">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">notifications_active</span>
+<span class="font-label-caps text-label-caps">Alerts</span>
+</a>
+<!-- Active Tab: Logs -->
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface font-semibold border-l-2 border-primary-container bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-caps text-label-caps">Logs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">developer_board</span>
+<span class="font-label-caps text-label-caps">Devices</span>
+</a>
+</nav>
+</div>
+<div class="mt-auto p-margin-desktop border-t border-outline-variant bg-surface-container-low">
+<div class="mb-4">
+<span class="text-[10px] font-label-caps text-outline block mb-1">CURRENT NODE</span>
+<span class="font-mono-data text-mono-data text-primary">ESP32 Gateway Node #01</span>
+</div>
+<nav class="space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors rounded" href="#">
+<span class="material-symbols-outlined">info</span>
+<span class="font-label-caps text-label-caps">About</span>
+</a>
+</nav>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-sidebar-width flex-1 flex flex-col min-w-0">
+<!-- TopNavBar (from JSON) -->
+<header class="h-16 w-full flex items-center justify-between px-margin-desktop border-b border-outline-variant bg-surface z-40">
+<div class="flex items-center gap-4">
+<span class="font-title-sm text-title-sm font-bold text-on-surface">ThermalGuard Operations</span>
+<div class="h-4 w-px bg-outline-variant"></div>
+<span class="font-label-caps text-label-caps text-primary tracking-widest">SYSTEM LOGS</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-1 bg-surface-container px-3 py-1.5 rounded-sm border border-outline-variant">
+<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+<span class="font-mono-data text-mono-data text-on-surface-variant ml-1">Live Mode</span>
+</div>
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">sensors</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">present_to_all</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">toggle_on</span>
+</button>
+</div>
+<button class="bg-primary-container text-on-primary-container px-4 py-1.5 rounded-sm font-label-caps text-label-caps hover:opacity-90 active:scale-95 transition-all">
+                    Operator Console
+                </button>
+</div>
+</header>
+<!-- Tool Bar -->
+<div class="px-margin-desktop py-4 bg-surface-container-low flex items-center justify-between border-b border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="text-on-surface-variant font-label-caps text-label-caps mr-2">TIME RANGE:</span>
+<div class="flex bg-surface-container border border-outline-variant rounded-sm overflow-hidden">
+<button class="px-3 py-1.5 text-mono-data font-mono-data hover:bg-surface-container-high border-r border-outline-variant transition-colors">LAST 1H</button>
+<button class="px-3 py-1.5 text-mono-data font-mono-data bg-primary text-on-primary border-r border-outline-variant transition-colors">LAST 6H</button>
+<button class="px-3 py-1.5 text-mono-data font-mono-data hover:bg-surface-container-high transition-colors">LAST 24H</button>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 py-1.5 border border-outline-variant bg-surface hover:bg-surface-container-high transition-colors rounded-sm text-on-surface-variant">
+<span class="material-symbols-outlined">download</span>
+<span class="font-label-caps text-label-caps uppercase">Download CSV</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-1.5 border border-error/30 bg-error-container/10 hover:bg-error-container/20 text-error transition-colors rounded-sm" onclick="confirmClear()">
+<span class="material-symbols-outlined">delete_forever</span>
+<span class="font-label-caps text-label-caps uppercase">Clear Logs</span>
+</button>
+</div>
+</div>
+<!-- Table Container -->
+<div class="flex-1 overflow-hidden relative">
+<!-- Animated subtle background for industrial feel -->
+<div class="absolute inset-0 pointer-events-none opacity-[0.03]">
+
+</div>
+<div class="h-full overflow-auto custom-scrollbar">
+<table class="w-full border-collapse text-left">
+<thead class="sticky top-0 bg-surface border-b border-outline-variant z-10">
+<tr>
+<th class="p-4 font-label-caps text-label-caps text-outline bg-surface-container-low w-48">TIMESTAMP</th>
+<th class="p-4 font-label-caps text-label-caps text-outline bg-surface-container-low w-40">SOURCE</th>
+<th class="p-4 font-label-caps text-label-caps text-outline bg-surface-container-low">EVENT DESCRIPTION</th>
+<th class="p-4 font-label-caps text-label-caps text-outline bg-surface-container-low w-32">VALUE</th>
+<th class="p-4 font-label-caps text-label-caps text-outline bg-surface-container-low w-32 text-right">STATUS</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Row 1 -->
+<tr class="table-row-hover transition-colors">
+<td class="p-4 font-mono-data text-mono-data text-on-surface-variant">2023-11-20 14:02:45.122</td>
+<td class="p-4">
+<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container text-on-secondary-container border border-outline-variant">MLX90640</span>
+</td>
+<td class="p-4 font-body-sm text-body-sm">Thermal Matrix Frame Recv: Segment 04/32</td>
+<td class="p-4 font-mono-data text-mono-data text-primary">32.4°C AVG</td>
+<td class="p-4 text-right">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-green-500/10 text-green-400 text-[10px] font-bold border border-green-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                    NOMINAL
+                                </span>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="table-row-hover transition-colors">
+<td class="p-4 font-mono-data text-mono-data text-on-surface-variant">2023-11-20 14:02:44.890</td>
+<td class="p-4">
+<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container text-on-secondary-container border border-outline-variant">DHT11</span>
+</td>
+<td class="p-4 font-body-sm text-body-sm">Relative Humidity Delta: Rising Threshold</td>
+<td class="p-4 font-mono-data text-mono-data text-primary">64.2 %RH</td>
+<td class="p-4 text-right">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-yellow-500/10 text-yellow-400 text-[10px] font-bold border border-yellow-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                                    WARNING
+                                </span>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="table-row-hover transition-colors">
+<td class="p-4 font-mono-data text-mono-data text-on-surface-variant">2023-11-20 14:02:42.001</td>
+<td class="p-4">
+<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container text-on-secondary-container border border-outline-variant">GATEWAY</span>
+</td>
+<td class="p-4 font-body-sm text-body-sm">MQTT Publish: Broker connection heart-beat</td>
+<td class="p-4 font-mono-data text-mono-data text-primary">12ms LAT</td>
+<td class="p-4 text-right">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-green-500/10 text-green-400 text-[10px] font-bold border border-green-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                    NOMINAL
+                                </span>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="table-row-hover transition-colors">
+<td class="p-4 font-mono-data text-mono-data text-on-surface-variant">2023-11-20 14:02:41.542</td>
+<td class="p-4">
+<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container text-on-secondary-container border border-outline-variant">IR_SNSR_01</span>
+</td>
+<td class="p-4 font-body-sm text-body-sm">Critical Overheat Trigger: Sensor Element B4</td>
+<td class="p-4 font-mono-data text-mono-data text-error">94.8°C</td>
+<td class="p-4 text-right">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-error-container/20 text-error text-[10px] font-bold border border-error/30">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                                    CRITICAL
+                                </span>
+</td>
+</tr>
+<!-- Row 5 (Duplicate for density demo) -->
+<tr class="table-row-hover transition-colors">
+<td class="p-4 font-mono-data text-mono-data text-on-surface-variant">2023-11-20 14:02:39.110</td>
+<td class="p-4">
+<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container text-on-secondary-container border border-outline-variant">MLX90640</span>
+</td>
+<td class="p-4 font-body-sm text-body-sm">Calibration Offset Applied: V_REF Adjusted</td>
+<td class="p-4 font-mono-data text-mono-data text-primary">-0.42V</td>
+<td class="p-4 text-right">
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-blue-500/10 text-blue-400 text-[10px] font-bold border border-blue-500/20">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    SYSTEM
+                                </span>
+</td>
+</tr>
+<!-- Repeat filler rows -->
+<script>
+                            const tbody = document.querySelector('tbody');
+                            const sources = ['MLX90640', 'DHT11', 'GATEWAY', 'IR_SNSR_02'];
+                            const descs = ['Thermal Matrix Frame Recv', 'Ambient Temperature Poll', 'Heartbeat Signal', 'SPI Bus Sync Error'];
+                            const statuses = [
+                                {label: 'NOMINAL', color: 'green', code: '0.1V'},
+                                {label: 'WARNING', color: 'yellow', code: '45.2%'},
+                                {label: 'NOMINAL', color: 'green', code: '22.1°C'},
+                                {label: 'DEBUG', color: 'blue', code: '0xAF'}
+                            ];
+                            
+                            for (let i = 0; i < 20; i++) {
+                                const row = document.createElement('tr');
+                                row.className = 'table-row-hover transition-colors';
+                                const srcIdx = Math.floor(Math.random() * sources.length);
+                                const stat = statuses[Math.floor(Math.random() * statuses.length)];
+                                row.innerHTML = `
+                                    <td class="p-4 font-mono-data text-mono-data text-on-surface-variant">2023-11-20 14:02:${(38 - i).toString().padStart(2, '0')}.452</td>
+                                    <td class="p-4">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-secondary-container text-on-secondary-container border border-outline-variant">${sources[srcIdx]}</span>
+                                    </td>
+                                    <td class="p-4 font-body-sm text-body-sm">${descs[srcIdx]}</td>
+                                    <td class="p-4 font-mono-data text-mono-data text-primary">${stat.code}</td>
+                                    <td class="p-4 text-right">
+                                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-sm bg-${stat.color}-500/10 text-${stat.color}-400 text-[10px] font-bold border border-${stat.color}-500/20">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-${stat.color}-500"></span>
+                                            ${stat.label}
+                                        </span>
+                                    </td>
+                                `;
+                                tbody.appendChild(row);
+                            }
+                        </script>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Footer Stats Bar -->
+<footer class="h-10 border-t border-outline-variant bg-surface px-margin-desktop flex items-center justify-between">
+<div class="flex gap-6 items-center">
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-label-caps text-outline">TOTAL EVENTS:</span>
+<span class="font-mono-data text-mono-data text-on-surface">1,248,092</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-label-caps text-outline">DB SIZE:</span>
+<span class="font-mono-data text-mono-data text-on-surface">142.4 MB</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-label-caps text-outline">STREAM:</span>
+<span class="text-[10px] font-bold text-green-500">ACTIVE</span>
+</div>
+</footer>
+</main>
+<script>
+        function confirmClear() {
+            if (confirm("CRITICAL: You are about to purge all local logs for ESP32 Gateway Node #01. This action is irreversible. Continue?")) {
+                const tbody = document.querySelector('tbody');
+                tbody.innerHTML = `<tr><td colspan="5" class="p-12 text-center text-outline italic font-mono-data">Log buffer empty. Listening for incoming sensor frames...</td></tr>`;
+            }
+        }
+
+        // Add micro-interaction to row clicks
+        document.addEventListener('click', (e) => {
+            const row = e.target.closest('tr');
+            if (row && row.parentNode.tagName === 'TBODY') {
+                console.log('Inspecting log entry:', row.cells[0].innerText);
+            }
+        });
+    </script>
+</body></html>

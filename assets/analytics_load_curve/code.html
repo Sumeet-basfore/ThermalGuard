@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Analytics &amp; Load Profiling | ThermalGuard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .chart-grid-line {
+            stroke: #2A3140;
+            stroke-width: 1;
+        }
+        .load-curve-path {
+            stroke: #b4c5ff;
+            stroke-width: 1.5;
+            fill: none;
+        }
+        .threshold-line {
+            stroke: #ffb4ab;
+            stroke-width: 1.5;
+            stroke-dasharray: 4 4;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111318;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2A3140;
+            border-radius: 3px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-fixed-variant": "#434751",
+                      "surface-tint": "#b4c5ff",
+                      "on-surface-variant": "#c3c6d7",
+                      "inverse-primary": "#0053db",
+                      "on-primary": "#002a78",
+                      "on-tertiary-fixed": "#141c2a",
+                      "background": "#111318",
+                      "error-container": "#93000a",
+                      "surface-container-highest": "#33353a",
+                      "on-primary-fixed-variant": "#003ea8",
+                      "secondary-fixed-dim": "#c3c6d3",
+                      "outline": "#8d90a0",
+                      "on-tertiary": "#29303f",
+                      "surface-container": "#1e1f25",
+                      "primary-container": "#2563eb",
+                      "on-secondary": "#2c303a",
+                      "on-secondary-fixed": "#181c25",
+                      "primary-fixed": "#dbe1ff",
+                      "tertiary-container": "#666d7e",
+                      "on-background": "#e2e2e9",
+                      "outline-variant": "#434655",
+                      "error": "#ffb4ab",
+                      "tertiary": "#c0c6da",
+                      "primary-fixed-dim": "#b4c5ff",
+                      "on-error-container": "#ffdad6",
+                      "surface": "#111318",
+                      "surface-container-low": "#1a1b21",
+                      "surface-container-high": "#282a2f",
+                      "tertiary-fixed-dim": "#c0c6da",
+                      "on-tertiary-container": "#ecf0ff",
+                      "primary": "#b4c5ff",
+                      "on-secondary-container": "#b5b8c4",
+                      "surface-bright": "#37393f",
+                      "inverse-surface": "#e2e2e9",
+                      "on-tertiary-fixed-variant": "#404757",
+                      "surface-variant": "#33353a",
+                      "on-surface": "#e2e2e9",
+                      "surface-dim": "#111318",
+                      "secondary": "#c3c6d3",
+                      "surface-container-lowest": "#0c0e13",
+                      "on-error": "#690005",
+                      "secondary-fixed": "#dfe2ef",
+                      "secondary-container": "#454953",
+                      "on-primary-container": "#eeefff",
+                      "on-primary-fixed": "#00174b",
+                      "tertiary-fixed": "#dce2f6",
+                      "inverse-on-surface": "#2e3036"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "16px",
+                      "sidebar-width": "240px",
+                      "panel-gap": "1px",
+                      "margin-desktop": "24px",
+                      "margin-mobile": "16px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "body-sm": ["Inter"],
+                      "code-table": ["JetBrains Mono"],
+                      "label-caps": ["Inter"],
+                      "headline-md": ["Inter"],
+                      "title-sm": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "body-md": ["Inter"],
+                      "mono-data": ["JetBrains Mono"]
+              },
+              "fontSize": {
+                      "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                      "code-table": ["13px", {"lineHeight": "16px", "fontWeight": "450"}],
+                      "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "title-sm": ["18px", {"lineHeight": "24px", "fontWeight": "500"}],
+                      "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "mono-data": ["12px", {"lineHeight": "14px", "fontWeight": "400"}]
+              }
+            },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-full w-sidebar-width fixed left-0 top-0 border-r border-outline-variant bg-surface z-50">
+<div class="p-gutter h-16 flex items-center">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">ThermalGuard</h1>
+</div>
+<nav class="flex-1 mt-4 px-3 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors font-body-md text-body-md rounded" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors font-body-md text-body-md rounded" href="#">
+<span class="material-symbols-outlined" data-icon="thermostat">thermostat</span>
+<span>Thermal Monitor</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface font-semibold border-l-2 border-primary-container bg-surface-container-low transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span>Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors font-body-md text-body-md rounded" href="#">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+<span>Alerts</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors font-body-md text-body-md rounded" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span>Logs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-on-surface-variant hover:bg-surface-container-high transition-colors font-body-md text-body-md rounded" href="#">
+<span class="material-symbols-outlined" data-icon="developer_board">developer_board</span>
+<span>Devices</span>
+</a>
+</nav>
+<div class="p-gutter">
+<div class="bg-surface-container-high p-4 border border-outline-variant rounded mb-4">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-1 uppercase">Active Node</p>
+<p class="font-body-md text-body-md text-primary font-semibold">ESP32 Gateway Node #01</p>
+</div>
+<div class="space-y-1 px-3 mb-6">
+<a class="flex items-center gap-3 py-2 text-on-surface-variant hover:text-primary transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+<a class="flex items-center gap-3 py-2 text-on-surface-variant hover:text-primary transition-colors font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined" data-icon="info">info</span>
+<span>About</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="flex items-center justify-between px-margin-desktop ml-sidebar-width h-16 fixed top-0 left-0 right-0 z-40 bg-surface border-b border-outline-variant">
+<h2 class="font-title-sm text-title-sm font-bold text-on-surface">Analytics &amp; Load Profiling</h2>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="present_to_all">present_to_all</span>
+</button>
+<button class="text-primary transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="toggle_on">toggle_on</span>
+</button>
+</div>
+<div class="h-6 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Live Mode</span>
+<button class="bg-primary-container text-on-primary-container px-4 py-1.5 font-label-caps text-label-caps rounded font-bold uppercase tracking-wider">
+                    Operator Console
+                </button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-sidebar-width pt-16 p-margin-desktop min-h-screen">
+<div class="max-w-[1440px] mx-auto space-y-gutter">
+<!-- Quick Metrics Grid -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-panel-gap bg-outline-variant border border-outline-variant">
+<div class="bg-surface p-gutter">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2 uppercase">Instantaneous Load</p>
+<div class="flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg font-mono-data text-primary">8.42</span>
+<span class="font-title-sm text-title-sm text-on-surface-variant">Amps</span>
+</div>
+<div class="flex items-center gap-1 mt-2 text-[#4ade80]">
+<span class="material-symbols-outlined text-sm" data-icon="trending_down">trending_down</span>
+<span class="font-body-sm text-body-sm">-4.2% vs 24h avg</span>
+</div>
+</div>
+<div class="bg-surface p-gutter">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2 uppercase">Peak Load (24h)</p>
+<div class="flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg font-mono-data text-on-surface">11.18</span>
+<span class="font-title-sm text-title-sm text-on-surface-variant">Amps</span>
+</div>
+<div class="flex items-center gap-1 mt-2 text-error">
+<span class="material-symbols-outlined text-sm" data-icon="warning">warning</span>
+<span class="font-body-sm text-body-sm">Threshold Breach Detected</span>
+</div>
+</div>
+<div class="bg-surface p-gutter">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2 uppercase">Avg Efficiency</p>
+<div class="flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg font-mono-data text-on-surface">94.8</span>
+<span class="font-title-sm text-title-sm text-on-surface-variant">%</span>
+</div>
+<div class="flex items-center gap-1 mt-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm" data-icon="horizontal_rule">horizontal_rule</span>
+<span class="font-body-sm text-body-sm">Stable Baseline</span>
+</div>
+</div>
+<div class="bg-surface p-gutter">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-2 uppercase">Calibration Data</p>
+<div class="space-y-1">
+<div class="flex justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">ADC Pin:</span>
+<span class="font-code-table text-code-table text-on-surface">GPIO 34</span>
+</div>
+<div class="flex justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Sensitivity:</span>
+<span class="font-code-table text-code-table text-on-surface">185 mV/A</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Charts Row -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- High Precision Current Load Curve -->
+<div class="lg:col-span-2 bg-surface border border-outline-variant p-gutter">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-title-sm text-title-sm font-semibold flex items-center gap-2">
+<span class="w-2 h-2 bg-primary rounded-full"></span>
+                            ACS712 Current Load Curve
+                        </h3>
+<div class="flex gap-2">
+<button class="bg-surface-container-high border border-outline-variant px-3 py-1 font-label-caps text-label-caps text-primary">LIVE</button>
+<button class="bg-surface border border-outline-variant px-3 py-1 font-label-caps text-label-caps text-on-surface-variant">1H</button>
+<button class="bg-surface border border-outline-variant px-3 py-1 font-label-caps text-label-caps text-on-surface-variant">24H</button>
+</div>
+</div>
+<div class="relative h-[400px] w-full bg-[#0c0e13] border border-outline-variant overflow-hidden">
+<!-- SVG Chart Area -->
+<svg class="absolute inset-0 w-full h-full" preserveaspectratio="none">
+<!-- Grid Lines -->
+<line class="chart-grid-line" x1="0" x2="100%" y1="50" y2="50"></line>
+<line class="chart-grid-line" x1="0" x2="100%" y1="150" y2="150"></line>
+<line class="chart-grid-line" x1="0" x2="100%" y1="250" y2="250"></line>
+<line class="chart-grid-line" x1="0" x2="100%" y1="350" y2="350"></line>
+<!-- Overload Threshold (10.0A) -->
+<line class="threshold-line" x1="0" x2="100%" y1="100" y2="100"></line>
+<!-- Sample Data Path -->
+<path class="load-curve-path" d="M0 280 L50 270 L100 290 L150 260 L200 240 L250 210 L300 220 L350 180 L400 190 L450 140 L500 130 L550 90 L600 110 L650 130 L700 150 L750 170 L800 190 L850 210 L900 230 L1000 240" style="stroke-linejoin: round;"></path>
+<!-- Active Value Indicator -->
+<circle cx="550" cy="90" fill="#b4c5ff" r="4"></circle>
+<line stroke="#2563eb" stroke-opacity="0.3" stroke-width="1" x1="550" x2="550" y1="0" y2="100%"></line>
+</svg>
+<!-- Legend/Labels -->
+<div class="absolute left-4 top-4 space-y-1">
+<p class="font-mono-data text-[10px] text-on-surface-variant">15.0A</p>
+</div>
+<div class="absolute left-4 top-[88px]">
+<p class="font-mono-data text-[10px] text-error">10.0A [LIMIT]</p>
+</div>
+<div class="absolute left-4 bottom-4">
+<p class="font-mono-data text-[10px] text-on-surface-variant">0.0A</p>
+</div>
+<!-- Hover Tooltip Placeholder -->
+<div class="absolute left-[560px] top-[70px] bg-surface-container-highest border border-primary p-2 z-10 shadow-lg">
+<p class="font-label-caps text-label-caps text-on-surface-variant">14:32:05</p>
+<p class="font-mono-data text-title-sm text-primary">12.45A</p>
+<p class="font-body-sm text-body-sm text-error">CRITICAL PEAK</p>
+</div>
+</div>
+<div class="mt-4 flex justify-between items-center px-2">
+<span class="font-mono-data text-[11px] text-on-surface-variant">T-60m</span>
+<span class="font-mono-data text-[11px] text-on-surface-variant">T-45m</span>
+<span class="font-mono-data text-[11px] text-on-surface-variant">T-30m</span>
+<span class="font-mono-data text-[11px] text-on-surface-variant">T-15m</span>
+<span class="font-mono-data text-[11px] text-primary">NOW</span>
+</div>
+</div>
+<!-- Energy Consumption Profile (Bar Chart) -->
+<div class="bg-surface border border-outline-variant p-gutter flex flex-col">
+<h3 class="font-title-sm text-title-sm font-semibold mb-6">Energy Profile (kWh)</h3>
+<div class="flex-1 flex items-end justify-between gap-2 px-2">
+<!-- Bar Items -->
+<div class="flex-1 space-y-2 group">
+<div class="bg-outline-variant w-full h-[40%] group-hover:bg-primary transition-colors relative">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 font-mono-data text-[10px] opacity-0 group-hover:opacity-100">4.2</div>
+</div>
+<p class="text-center font-label-caps text-[9px] text-on-surface-variant">MON</p>
+</div>
+<div class="flex-1 space-y-2 group">
+<div class="bg-outline-variant w-full h-[55%] group-hover:bg-primary transition-colors relative">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 font-mono-data text-[10px] opacity-0 group-hover:opacity-100">5.8</div>
+</div>
+<p class="text-center font-label-caps text-[9px] text-on-surface-variant">TUE</p>
+</div>
+<div class="flex-1 space-y-2 group">
+<div class="bg-outline-variant w-full h-[48%] group-hover:bg-primary transition-colors relative"></div>
+<p class="text-center font-label-caps text-[9px] text-on-surface-variant">WED</p>
+</div>
+<div class="flex-1 space-y-2 group">
+<div class="bg-outline-variant w-full h-[72%] group-hover:bg-primary transition-colors relative"></div>
+<p class="text-center font-label-caps text-[9px] text-on-surface-variant">THU</p>
+</div>
+<div class="flex-1 space-y-2 group">
+<div class="bg-primary w-full h-[90%] relative">
+<div class="absolute -top-6 left-1/2 -translate-x-1/2 font-mono-data text-[10px] text-primary">9.4</div>
+</div>
+<p class="text-center font-label-caps text-[9px] text-primary">FRI</p>
+</div>
+<div class="flex-1 space-y-2 group">
+<div class="bg-outline-variant w-full h-[30%] group-hover:bg-primary transition-colors relative"></div>
+<p class="text-center font-label-caps text-[9px] text-on-surface-variant">SAT</p>
+</div>
+<div class="flex-1 space-y-2 group">
+<div class="bg-outline-variant w-full h-[25%] group-hover:bg-primary transition-colors relative"></div>
+<p class="text-center font-label-caps text-[9px] text-on-surface-variant">SUN</p>
+</div>
+</div>
+<div class="mt-8 pt-6 border-t border-outline-variant">
+<p class="font-label-caps text-label-caps text-on-surface-variant mb-4 uppercase">Weekly Summary</p>
+<div class="space-y-3">
+<div class="flex justify-between items-center">
+<span class="font-body-sm text-body-sm">Total Consumption</span>
+<span class="font-mono-data text-body-md text-on-surface">42.85 kWh</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-sm text-body-sm">Estimated Cost</span>
+<span class="font-mono-data text-body-md text-on-surface">$14.12</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="font-body-sm text-body-sm">Carbon Footprint</span>
+<span class="font-mono-data text-body-md text-[#4ade80]">8.2 kg CO2e</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Logs & Node Info Bento -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<div class="bg-surface border border-outline-variant p-gutter">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant mb-4 uppercase">Sensor Integrity</h4>
+<div class="space-y-4">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-high rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="health_and_safety">health_and_safety</span>
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold">Current Sensor OK</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Signal-to-noise ratio: 42dB</p>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-high rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-[#4ade80]" data-icon="bolt">bolt</span>
+</div>
+<div>
+<p class="font-body-md text-body-md font-semibold">RMS Calculation</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Active processing at 1.2kHz</p>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-surface border border-outline-variant p-gutter">
+<h4 class="font-label-caps text-label-caps text-on-surface-variant mb-4 uppercase">Anomaly Event Log</h4>
+<div class="space-y-2">
+<div class="flex justify-between items-center py-1 border-b border-outline-variant/30">
+<span class="font-code-table text-[11px] text-error">OVER_THRESHOLD</span>
+<span class="font-code-table text-[11px] text-on-surface-variant">12:15:22</span>
+</div>
+<div class="flex justify-between items-center py-1 border-b border-outline-variant/30">
+<span class="font-code-table text-[11px] text-on-secondary-container">REBOOT_WATCHDOG</span>
+<span class="font-code-table text-[11px] text-on-surface-variant">09:12:01</span>
+</div>
+<div class="flex justify-between items-center py-1 border-b border-outline-variant/30">
+<span class="font-code-table text-[11px] text-[#4ade80]">CALIBRATION_SYNC</span>
+<span class="font-code-table text-[11px] text-on-surface-variant">04:00:00</span>
+</div>
+<div class="flex justify-between items-center py-1 border-b border-outline-variant/30">
+<span class="font-code-table text-[11px] text-on-surface-variant">NORMAL_OP</span>
+<span class="font-code-table text-[11px] text-on-surface-variant">02:22:15</span>
+</div>
+</div>
+</div>
+<div class="bg-primary-container p-gutter relative overflow-hidden flex flex-col justify-between">
+<div class="relative z-10">
+<h4 class="font-label-caps text-label-caps text-on-primary-container/80 mb-2 uppercase">Calibration Profile</h4>
+<p class="font-headline-md text-headline-md font-bold text-on-primary-container leading-tight">185 mV/A</p>
+<p class="font-body-sm text-body-sm text-on-primary-container/90 mt-2">Standard sensitivity for ACS712-05B module. Reference voltage: 5.0V VCC.</p>
+</div>
+<div class="relative z-10 mt-6">
+<button class="w-full bg-on-primary-container text-primary-container font-label-caps text-label-caps py-2 font-bold hover:opacity-90 transition-opacity">
+                            RE-CALIBRATE SENSOR
+                        </button>
+</div>
+<!-- Background Pattern -->
+<div class="absolute right-[-20px] bottom-[-20px] opacity-10">
+<span class="material-symbols-outlined text-[120px]" data-icon="precision_manufacturing">precision_manufacturing</span>
+</div>
+</div>
+</div>
+<!-- Atmospheric Node Decoration -->
+<div class="bg-surface-container-low border border-outline-variant overflow-hidden p-6 relative">
+<div class="flex items-center gap-6 relative z-10">
+<div class="flex-1">
+<h4 class="font-title-sm text-title-sm font-semibold mb-2">Technical Infrastructure Overlay</h4>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+                            The Analytics engine processes raw ADC data from ESP32 Pin 34 via a custom Kalman Filter to eliminate electrical noise interference from high-frequency switching power supplies.
+                        </p>
+</div>
+<div class="hidden md:flex gap-4">
+<div class="text-right">
+<p class="font-label-caps text-[10px] text-on-surface-variant uppercase">CPU LOAD</p>
+<p class="font-mono-data text-body-md">12%</p>
+</div>
+<div class="text-right">
+<p class="font-label-caps text-[10px] text-on-surface-variant uppercase">MEM FREE</p>
+<p class="font-mono-data text-body-md">142KB</p>
+</div>
+</div>
+</div>
+<div class="absolute inset-0 opacity-[0.03] pointer-events-none">
+<div class="w-full h-full" style="background-image: linear-gradient(0deg, transparent 24%, #ffffff 25%, #ffffff 26%, transparent 27%, transparent 74%, #ffffff 75%, #ffffff 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, #ffffff 25%, #ffffff 26%, transparent 27%, transparent 74%, #ffffff 75%, #ffffff 76%, transparent 77%, transparent); background-size: 40px 40px;"></div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Micro-interactions for industrial dashboard feel
+        document.querySelectorAll('button, a').forEach(elem => {
+            elem.addEventListener('mousedown', () => {
+                elem.style.transform = 'scale(0.98)';
+            });
+            elem.addEventListener('mouseup', () => {
+                elem.style.transform = 'scale(1)';
+            });
+        });
+
+        // Simulating live data update visualization
+        setInterval(() => {
+            const liveMetric = document.querySelector('.text-primary.font-display-lg');
+            if (liveMetric) {
+                const currentVal = parseFloat(liveMetric.innerText);
+                const fluctuation = (Math.random() - 0.5) * 0.1;
+                liveMetric.innerText = (currentVal + fluctuation).toFixed(2);
+            }
+        }, 2000);
+    </script>
+</body></html>

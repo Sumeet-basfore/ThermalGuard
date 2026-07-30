@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>About - ThermalGuard v2.4</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        /* Custom scrollbar for industrial feel */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #111318; }
+        ::-webkit-scrollbar-thumb { background: #2A3140; border-radius: 0px; }
+        ::-webkit-scrollbar-thumb:hover { background: #434655; }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#c3c6d3",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#0c0e13",
+                        "on-secondary": "#2c303a",
+                        "tertiary": "#c0c6da",
+                        "inverse-primary": "#0053db",
+                        "surface-container-highest": "#33353a",
+                        "secondary-container": "#454953",
+                        "on-surface-variant": "#c3c6d7",
+                        "surface-container": "#1e1f25",
+                        "primary-container": "#2563eb",
+                        "surface-tint": "#b4c5ff",
+                        "surface-container-low": "#1a1b21",
+                        "on-error": "#690005",
+                        "surface-dim": "#111318",
+                        "on-secondary-container": "#b5b8c4",
+                        "primary": "#b4c5ff",
+                        "tertiary-container": "#666d7e",
+                        "surface": "#111318",
+                        "outline-variant": "#434655",
+                        "on-primary": "#002a78",
+                        "surface-container-high": "#282a2f",
+                        "on-tertiary-fixed": "#141c2a",
+                        "on-tertiary-container": "#ecf0ff",
+                        "background": "#111318",
+                        "on-secondary-fixed": "#181c25",
+                        "surface-bright": "#37393f",
+                        "primary-fixed": "#dbe1ff",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#c0c6da",
+                        "on-background": "#e2e2e9",
+                        "surface-variant": "#33353a",
+                        "on-primary-fixed": "#00174b",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed-variant": "#404757",
+                        "on-tertiary": "#29303f",
+                        "inverse-surface": "#e2e2e9",
+                        "tertiary-fixed": "#dce2f6",
+                        "outline": "#8d90a0",
+                        "inverse-on-surface": "#2e3036",
+                        "on-surface": "#e2e2e9",
+                        "on-secondary-fixed-variant": "#434751",
+                        "primary-fixed-dim": "#b4c5ff",
+                        "on-primary-container": "#eeefff",
+                        "secondary-fixed-dim": "#c3c6d3",
+                        "on-primary-fixed-variant": "#003ea8",
+                        "secondary-fixed": "#dfe2ef"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "sidebar-width": "240px",
+                        "panel-gap": "1px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "margin-desktop": "24px"
+                    },
+                    "fontFamily": {
+                        "mono-data": ["JetBrains Mono"],
+                        "code-table": ["JetBrains Mono"],
+                        "body-sm": ["Inter"],
+                        "label-caps": ["Inter"],
+                        "title-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "mono-data": ["12px", {"lineHeight": "14px", "fontWeight": "400"}],
+                        "code-table": ["13px", {"lineHeight": "16px", "fontWeight": "450"}],
+                        "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                        "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                        "title-sm": ["18px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-full w-sidebar-width border-r border-outline-variant fixed left-0 top-0 bg-surface dark:bg-surface z-50">
+<div class="p-6">
+<div class="font-headline-md text-headline-md font-bold text-on-surface dark:text-on-surface">ThermalGuard</div>
+<div class="text-on-surface-variant font-label-caps text-label-caps">v2.4</div>
+</div>
+<nav class="flex-1 mt-4 px-2 space-y-1">
+<!-- Nav Items from JSON -->
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="dashboard">dashboard</span>
+<span class="font-body-md text-body-md">Dashboard</span>
+</a>
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="thermostat">thermostat</span>
+<span class="font-body-md text-body-md">Thermal Monitor</span>
+</a>
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="analytics">analytics</span>
+<span class="font-body-md text-body-md">Analytics</span>
+</a>
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="notifications_active">notifications_active</span>
+<span class="font-body-md text-body-md">Alerts</span>
+</a>
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="description">description</span>
+<span class="font-body-md text-body-md">Logs</span>
+</a>
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-high transition-colors group" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="developer_board">developer_board</span>
+<span class="font-body-md text-body-md">Devices</span>
+</a>
+</nav>
+<div class="p-4 bg-surface-container-low border-t border-outline-variant">
+<div class="font-label-caps text-label-caps text-on-surface-variant mb-2">CONNECTED DEVICE</div>
+<div class="text-primary font-mono-data text-mono-data">ESP32 Gateway Node #01</div>
+</div>
+<footer class="p-2 space-y-1">
+<a class="flex items-center px-4 py-3 text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="settings">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+<!-- Active Navigation Logic: "About" maps to the current page -->
+<a class="flex items-center px-4 py-3 text-on-surface dark:text-on-surface font-semibold border-l-2 border-primary-container bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="info">info</span>
+<span class="font-body-md text-body-md">About</span>
+</a>
+</footer>
+</aside>
+<!-- TopNavBar -->
+<header class="flex items-center justify-between px-margin-desktop ml-sidebar-width h-16 fixed top-0 left-0 right-0 z-40 border-b border-outline-variant bg-surface dark:bg-surface">
+<div class="flex items-center space-x-4">
+<span class="font-title-sm text-title-sm font-bold text-on-surface dark:text-on-surface uppercase tracking-tight">ThermalGuard Operations</span>
+<span class="h-4 w-px bg-outline-variant"></span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">System Documentation</span>
+</div>
+<div class="flex items-center space-x-6">
+<div class="flex items-center space-x-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="present_to_all">present_to_all</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="toggle_on">toggle_on</span>
+</button>
+</div>
+<button class="px-4 py-1.5 bg-primary-container text-on-primary-container font-label-caps text-label-caps rounded hover:opacity-90 active:scale-95 transition-all">
+                Operator Console
+            </button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-sidebar-width pt-16 min-h-screen bg-background">
+<div class="p-margin-desktop max-w-7xl mx-auto">
+<!-- Page Header -->
+<div class="mb-8 border-b border-outline-variant pb-8">
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2">System Information</h1>
+<p class="text-on-surface-variant font-body-md max-w-2xl">
+                    Detailed technical overview of the ThermalGuard core operating environment, hardware specifications, and system architecture.
+                </p>
+</div>
+<div class="grid grid-cols-12 gap-px bg-outline-variant border border-outline-variant">
+<!-- System Hardware Details -->
+<div class="col-span-12 md:col-span-4 bg-surface p-6">
+<h2 class="font-label-caps text-label-caps text-primary mb-6 flex items-center">
+<span class="material-symbols-outlined mr-2 text-[18px]" data-icon="memory">memory</span>
+                        CORE HARDWARE
+                    </h2>
+<div class="space-y-6">
+<div>
+<div class="font-label-caps text-[10px] text-on-surface-variant opacity-60">MAIN PROCESSOR</div>
+<div class="font-mono-data text-mono-data text-on-surface mt-1">ESP32-WROOM-32D Dual Core 240MHz</div>
+</div>
+<div>
+<div class="font-label-caps text-[10px] text-on-surface-variant opacity-60">THERMAL SENSOR</div>
+<div class="font-mono-data text-mono-data text-on-surface mt-1">MLX90640-DCI (32x24 IR Array)</div>
+</div>
+<div>
+<div class="font-label-caps text-[10px] text-on-surface-variant opacity-60">SERIAL NUMBER</div>
+<div class="font-mono-data text-mono-data text-on-surface mt-1">TG-2401-X01-8842-F2B</div>
+</div>
+<div>
+<div class="font-label-caps text-[10px] text-on-surface-variant opacity-60">MAC ADDRESS</div>
+<div class="font-mono-data text-mono-data text-on-surface mt-1">AC:67:B2:D4:F1:A9</div>
+</div>
+</div>
+</div>
+<!-- Firmware & Updates -->
+<div class="col-span-12 md:col-span-8 bg-surface p-6">
+<div class="flex justify-between items-start mb-6">
+<h2 class="font-label-caps text-label-caps text-primary flex items-center">
+<span class="material-symbols-outlined mr-2 text-[18px]" data-icon="terminal">terminal</span>
+                            SOFTWARE ENVIRONMENT
+                        </h2>
+<button class="flex items-center px-4 py-1.5 border border-outline-variant hover:bg-surface-container-high transition-colors font-label-caps text-label-caps" id="updateBtn">
+<span class="material-symbols-outlined mr-2 text-[16px]" data-icon="update">update</span>
+                            Check for Updates
+                        </button>
+</div>
+<div class="grid grid-cols-2 gap-8 mb-8">
+<div>
+<div class="font-label-caps text-[10px] text-on-surface-variant opacity-60">FIRMWARE VERSION</div>
+<div class="flex items-baseline space-x-2 mt-1">
+<span class="font-mono-data text-mono-data text-on-surface">v2.4.12-LTS</span>
+<span class="px-2 py-0.5 bg-primary-container/10 text-primary font-label-caps text-[9px] rounded-full border border-primary/20">STABLE</span>
+</div>
+</div>
+<div>
+<div class="font-label-caps text-[10px] text-on-surface-variant opacity-60">BUILD TARGET</div>
+<div class="font-mono-data text-mono-data text-on-surface mt-1">ESP-IDF v5.1.2 Production</div>
+</div>
+</div>
+<div class="bg-surface-container-low p-4 border border-outline-variant">
+<div class="font-label-caps text-[10px] text-on-surface-variant mb-3">SYSTEM LOG EXTRACT (BOOT)</div>
+<div class="font-mono-data text-mono-data text-on-surface-variant text-[11px] space-y-1">
+<div>[0.001] Initializing system clock... OK</div>
+<div>[0.024] ESP32-S3 rev. 1 detected</div>
+<div>[0.156] I2C Bus scan: 0x33 (MLX90640) detected</div>
+<div>[0.158] WiFi stack initialized: Mode Station</div>
+<div>[0.842] ThermalGuard Kernel v2.4.12 startup complete</div>
+</div>
+</div>
+</div>
+<!-- System Architecture Diagram (Bento Pattern) -->
+<div class="col-span-12 md:col-span-9 bg-surface p-8">
+<h2 class="font-label-caps text-label-caps text-primary mb-8 flex items-center">
+<span class="material-symbols-outlined mr-2 text-[18px]" data-icon="account_tree">account_tree</span>
+                        SYSTEM ARCHITECTURE
+                    </h2>
+<div class="relative w-full aspect-video md:aspect-[21/9] border border-outline-variant bg-surface-container-lowest flex items-center justify-center group overflow-hidden">
+<!-- Simplified Architecture Visualization -->
+<div class="grid grid-cols-5 gap-4 w-full h-full p-8 relative z-10">
+<!-- Input Node -->
+<div class="flex flex-col items-center justify-center space-y-4">
+<div class="w-16 h-16 border border-primary-container flex items-center justify-center bg-primary-container/5 relative">
+<span class="material-symbols-outlined text-primary text-[32px]" data-icon="videocam">videocam</span>
+<div class="absolute -top-2 -right-2 w-3 h-3 bg-primary animate-pulse"></div>
+</div>
+<div class="text-center">
+<div class="font-label-caps text-[10px]">SENSOR</div>
+<div class="font-mono-data text-[10px] text-on-surface-variant">MLX90640</div>
+</div>
+</div>
+<!-- Connector -->
+<div class="flex items-center justify-center">
+<div class="h-px w-full bg-outline-variant relative">
+<div class="absolute top-1/2 left-0 w-2 h-2 bg-primary -translate-y-1/2 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.5)] transition-all duration-[2000ms] ease-linear" id="dataBit1" style="left: 0%;"></div>
+</div>
+</div>
+<!-- Processor Node -->
+<div class="flex flex-col items-center justify-center space-y-4">
+<div class="w-24 h-24 border-2 border-outline flex flex-col items-center justify-center bg-surface-container">
+<span class="material-symbols-outlined text-on-surface text-[40px]" data-icon="memory">memory</span>
+<div class="font-label-caps text-[10px] mt-1 text-primary">CORE</div>
+</div>
+<div class="text-center">
+<div class="font-label-caps text-[10px]">GATEWAY</div>
+<div class="font-mono-data text-[10px] text-on-surface-variant">ESP32-WROOM</div>
+</div>
+</div>
+<!-- Connector -->
+<div class="flex items-center justify-center">
+<div class="h-px w-full bg-outline-variant"></div>
+</div>
+<!-- Output Node -->
+<div class="flex flex-col items-center justify-center space-y-4">
+<div class="w-16 h-16 border border-outline-variant flex items-center justify-center bg-surface-container-high">
+<span class="material-symbols-outlined text-on-surface-variant text-[32px]" data-icon="cloud">cloud</span>
+</div>
+<div class="text-center">
+<div class="font-label-caps text-[10px]">ENDPOINT</div>
+<div class="font-mono-data text-[10px] text-on-surface-variant">MQTT/TLS</div>
+</div>
+</div>
+</div>
+<!-- Background Pattern -->
+<div class="absolute inset-0 opacity-5 pointer-events-none" style="background-image: radial-gradient(#8d90a0 1px, transparent 1px); background-size: 20px 20px;"></div>
+</div>
+</div>
+<!-- Developer Credits & Metadata -->
+<div class="col-span-12 md:col-span-3 bg-surface p-6">
+<h2 class="font-label-caps text-label-caps text-primary mb-6 flex items-center">
+<span class="material-symbols-outlined mr-2 text-[18px]" data-icon="groups">groups</span>
+                        CREDITS
+                    </h2>
+<div class="space-y-6">
+<div>
+<div class="font-label-caps text-[10px] text-on-surface-variant opacity-60">LEAD ARCHITECT</div>
+<div class="font-body-md text-on-surface mt-1">Dr. Aris Vanhoutte</div>
+</div>
+<div>
+<div class="font-label-caps text-[10px] text-on-surface-variant opacity-60">HARDWARE ENGINEERING</div>
+<div class="font-body-md text-on-surface mt-1">Sigma Industrial Systems</div>
+</div>
+<div>
+<div class="font-label-caps text-[10px] text-on-surface-variant opacity-60">UI/UX DESIGN</div>
+<div class="font-body-md text-on-surface mt-1">Interface Dynamics Lab</div>
+</div>
+<div class="pt-4 border-t border-outline-variant">
+<div class="font-label-caps text-[10px] text-on-surface-variant opacity-60">LICENSING</div>
+<div class="font-mono-data text-[11px] text-on-surface mt-1">COMMERCIAL LICENSE #88190-B</div>
+</div>
+</div>
+</div>
+<!-- Footer Links -->
+<div class="col-span-12 bg-surface p-6 flex flex-col md:flex-row justify-between items-center gap-6">
+<div class="flex flex-wrap gap-8">
+<a class="flex items-center text-on-surface hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined mr-2 text-on-surface-variant group-hover:text-primary" data-icon="article">article</span>
+<span class="font-label-caps text-label-caps">Technical Documentation</span>
+</a>
+<a class="flex items-center text-on-surface hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined mr-2 text-on-surface-variant group-hover:text-primary" data-icon="grid_view">grid_view</span>
+<span class="font-label-caps text-label-caps">Hardware Pinout</span>
+</a>
+<a class="flex items-center text-on-surface hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined mr-2 text-on-surface-variant group-hover:text-primary" data-icon="history">history</span>
+<span class="font-label-caps text-label-caps">Release Notes</span>
+</a>
+</div>
+<div class="text-on-surface-variant font-label-caps text-[10px] opacity-60">
+                        © 2024 THERMALGUARD INDUSTRIAL. ALL RIGHTS RESERVED.
+                    </div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple micro-interaction for the update button
+        const updateBtn = document.getElementById('updateBtn');
+        updateBtn.addEventListener('click', () => {
+            const originalContent = updateBtn.innerHTML;
+            updateBtn.disabled = true;
+            updateBtn.innerHTML = `
+                <span class="material-symbols-outlined animate-spin mr-2 text-[16px]" data-icon="sync">sync</span>
+                Connecting...
+            `;
+            setTimeout(() => {
+                updateBtn.innerHTML = `
+                    <span class="material-symbols-outlined mr-2 text-[16px] text-primary" data-icon="check_circle">check_circle</span>
+                    System Up to Date
+                `;
+                setTimeout(() => {
+                    updateBtn.innerHTML = originalContent;
+                    updateBtn.disabled = false;
+                }, 3000);
+            }, 2000);
+        });
+
+        // Simple animation for the architecture diagram "data flow"
+        const dataBit = document.getElementById('dataBit1');
+        let pos = 0;
+        function animateFlow() {
+            pos += 0.5;
+            if (pos > 100) pos = 0;
+            dataBit.style.left = pos + '%';
+            dataBit.style.opacity = Math.sin(pos * 0.1) * 0.5 + 0.5;
+            requestAnimationFrame(animateFlow);
+        }
+        animateFlow();
+    </script>
+</body></html>

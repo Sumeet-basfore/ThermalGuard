@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ThermalGuard | Thermal Monitor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;450&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#434751",
+                    "surface-tint": "#b4c5ff",
+                    "on-surface-variant": "#c3c6d7",
+                    "inverse-primary": "#0053db",
+                    "on-primary": "#002a78",
+                    "on-tertiary-fixed": "#141c2a",
+                    "background": "#111318",
+                    "error-container": "#93000a",
+                    "surface-container-highest": "#33353a",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "secondary-fixed-dim": "#c3c6d3",
+                    "outline": "#8d90a0",
+                    "on-tertiary": "#29303f",
+                    "surface-container": "#1e1f25",
+                    "primary-container": "#2563eb",
+                    "on-secondary": "#2c303a",
+                    "on-secondary-fixed": "#181c25",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary-container": "#666d7e",
+                    "on-background": "#e2e2e9",
+                    "outline-variant": "#434655",
+                    "error": "#ffb4ab",
+                    "tertiary": "#c0c6da",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-error-container": "#ffdad6",
+                    "surface": "#111318",
+                    "surface-container-low": "#1a1b21",
+                    "surface-container-high": "#282a2f",
+                    "tertiary-fixed-dim": "#c0c6da",
+                    "on-tertiary-container": "#ecf0ff",
+                    "primary": "#b4c5ff",
+                    "on-secondary-container": "#b5b8c4",
+                    "surface-bright": "#37393f",
+                    "inverse-surface": "#e2e2e9",
+                    "on-tertiary-fixed-variant": "#404757",
+                    "surface-variant": "#33353a",
+                    "on-surface": "#e2e2e9",
+                    "surface-dim": "#111318",
+                    "secondary": "#c3c6d3",
+                    "surface-container-lowest": "#0c0e13",
+                    "on-error": "#690005",
+                    "secondary-fixed": "#dfe2ef",
+                    "secondary-container": "#454953",
+                    "on-primary-container": "#eeefff",
+                    "on-primary-fixed": "#00174b",
+                    "tertiary-fixed": "#dce2f6",
+                    "inverse-on-surface": "#2e3036"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "sidebar-width": "240px",
+                    "panel-gap": "1px",
+                    "margin-desktop": "24px",
+                    "margin-mobile": "16px",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "body-sm": ["Inter"],
+                    "code-table": ["JetBrains Mono"],
+                    "label-caps": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "title-sm": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "body-md": ["Inter"],
+                    "mono-data": ["JetBrains Mono"]
+            },
+            "fontSize": {
+                    "body-sm": ["13px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "code-table": ["13px", {"lineHeight": "16px", "fontWeight": "450"}],
+                    "label-caps": ["11px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "title-sm": ["18px", {"lineHeight": "24px", "fontWeight": "500"}],
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "mono-data": ["12px", {"lineHeight": "14px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .thermal-grid {
+            display: grid;
+            grid-template-columns: repeat(32, 1fr);
+            grid-template-rows: repeat(24, 1fr);
+            gap: 1px;
+            background: #2A3140;
+        }
+        .thermal-pixel {
+            aspect-ratio: 1;
+            transition: background-color 0.2s ease;
+        }
+        .reticle {
+            position: absolute;
+            pointer-events: none;
+            width: 40px;
+            height: 40px;
+            border: 1px solid #FF3D00;
+            transform: translate(-50%, -50%);
+        }
+        .reticle::before, .reticle::after {
+            content: '';
+            position: absolute;
+            background: #FF3D00;
+        }
+        .reticle::before { top: 50%; left: -10px; width: 60px; height: 1px; }
+        .reticle::after { left: 50%; top: -10px; width: 1px; height: 60px; }
+
+        .palette-ironbow { background: linear-gradient(to right, #000, #41107b, #d03e1b, #f1e529); }
+        .palette-rainbow { background: linear-gradient(to right, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000); }
+        .palette-fire { background: linear-gradient(to right, #000, #800000, #ff8000, #ffff00, #ffffff); }
+
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #0B0D12; }
+        ::-webkit-scrollbar-thumb { background: #2A3140; }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-full w-sidebar-width border-r border-outline-variant bg-surface fixed left-0 top-0 z-50">
+<div class="p-gutter">
+<h1 class="font-headline-md text-headline-md font-bold text-on-surface">ThermalGuard</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant opacity-70">v2.4</p>
+</div>
+<nav class="flex-1 mt-4">
+<ul class="space-y-1">
+<li>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-3">dashboard</span>
+<span class="font-body-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-gutter py-3 text-on-surface font-semibold border-l-2 border-primary-container bg-surface-container-high" href="#">
+<span class="material-symbols-outlined mr-3">thermostat</span>
+<span class="font-body-md">Thermal Monitor</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-3">analytics</span>
+<span class="font-body-md">Analytics</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-3">notifications_active</span>
+<span class="font-body-md">Alerts</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-3">description</span>
+<span class="font-body-md">Logs</span>
+</a>
+</li>
+<li>
+<a class="flex items-center px-gutter py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-3">developer_board</span>
+<span class="font-body-md">Devices</span>
+</a>
+</li>
+</ul>
+</nav>
+<div class="p-gutter border-t border-outline-variant">
+<div class="bg-surface-container-low p-3 rounded mb-4">
+<p class="font-label-caps text-label-caps text-primary-fixed mb-1">Active Node</p>
+<p class="font-mono-data text-mono-data">ESP32 Gateway Node #01</p>
+</div>
+<ul class="space-y-1">
+<li>
+<a class="flex items-center py-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined mr-3 text-sm">settings</span>
+<span class="font-body-md">Settings</span>
+</a>
+</li>
+<li>
+<a class="flex items-center py-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined mr-3 text-sm">info</span>
+<span class="font-body-md">About</span>
+</a>
+</li>
+</ul>
+</div>
+</aside>
+<!-- TopNavBar -->
+<header class="h-16 w-full fixed top-0 z-40 border-b border-outline-variant bg-surface flex items-center justify-between px-margin-desktop ml-sidebar-width" style="width: calc(100% - 240px);">
+<div class="flex items-center gap-4">
+<h2 class="font-title-sm text-title-sm font-bold text-on-surface">Thermal Monitor</h2>
+<span class="flex items-center gap-2 px-2 py-1 bg-primary-container/10 border border-primary-container/20 rounded-full">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+<span class="font-label-caps text-label-caps text-primary">ESP32 Online</span>
+</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors material-symbols-outlined">sensors</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors material-symbols-outlined">present_to_all</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors material-symbols-outlined">toggle_on</button>
+</div>
+<div class="h-8 w-px bg-outline-variant"></div>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-primary-container text-on-primary-container font-label-caps text-label-caps rounded-lg active:scale-95 transition-transform">Operator Console</button>
+<button class="px-4 py-2 border border-outline-variant hover:bg-surface-container-high font-label-caps text-label-caps rounded-lg transition-colors">Live Mode</button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="ml-sidebar-width pt-16 min-h-screen">
+<div class="p-gutter max-w-7xl mx-auto grid grid-cols-12 gap-gutter">
+<!-- Left: Spatial Matrix Control -->
+<div class="col-span-12 lg:col-span-8 flex flex-col gap-gutter">
+<section class="bg-surface border border-outline-variant p-gutter rounded-xl relative overflow-hidden">
+<div class="flex justify-between items-center mb-4">
+<div>
+<h3 class="font-title-sm text-title-sm text-on-surface">MLX90640 Sensor Array</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">768-pixel Spatial IR Matrix · Focal Plane: 1.2m</p>
+</div>
+<div class="flex items-center gap-3">
+<span class="font-mono-data text-mono-data text-primary">FPS: 8.0</span>
+<span class="font-mono-data text-mono-data text-on-surface-variant">0x33 ADDR</span>
+</div>
+</div>
+<!-- Heatmap Canvas -->
+<div class="relative bg-surface-container-lowest border border-outline-variant aspect-[4/3] w-full" id="heatmap-container">
+<div class="thermal-grid w-full h-full" id="thermal-grid">
+<!-- JS will populate pixels -->
+</div>
+<!-- Target Reticle Overlay -->
+<div class="reticle" id="reticle" style="top: 30%; left: 60%;"></div>
+<!-- HUD Overlays -->
+<div class="absolute bottom-4 left-4 p-3 bg-surface-dim/80 backdrop-blur-md border border-outline-variant rounded-lg">
+<p class="font-label-caps text-label-caps text-primary-fixed-dim mb-2">Hotspot HUD</p>
+<div class="grid grid-cols-2 gap-x-6 gap-y-1">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Coord</span>
+<span class="font-mono-data text-mono-data text-on-surface text-right" id="hud-coord">X: 19, Y: 07</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Peak</span>
+<span class="font-mono-data text-mono-data text-error text-right" id="hud-peak">42.8°C</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Avg</span>
+<span class="font-mono-data text-mono-data text-on-surface text-right" id="hud-avg">24.1°C</span>
+</div>
+</div>
+<div class="absolute top-4 right-4 flex flex-col gap-2">
+<button class="bg-surface-dim/80 p-2 border border-outline-variant rounded text-on-surface-variant hover:text-primary material-symbols-outlined">zoom_in</button>
+<button class="bg-surface-dim/80 p-2 border border-outline-variant rounded text-on-surface-variant hover:text-primary material-symbols-outlined">zoom_out</button>
+<button class="bg-surface-dim/80 p-2 border border-outline-variant rounded text-on-surface-variant hover:text-primary material-symbols-outlined">photo_camera</button>
+</div>
+</div>
+</section>
+<!-- Palette Selection -->
+<section class="bg-surface border border-outline-variant p-4 rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Palette Selection</span>
+<div class="flex gap-2">
+<button class="palette-btn px-4 py-2 border-2 border-primary-container bg-surface-container-high rounded-lg flex items-center gap-2 group" onclick="setPalette('ironbow')">
+<div class="w-4 h-4 palette-ironbow rounded-full"></div>
+<span class="font-label-caps text-label-caps text-on-surface">Ironbow</span>
+</button>
+<button class="palette-btn px-4 py-2 border border-outline-variant hover:bg-surface-container-high rounded-lg flex items-center gap-2 group" onclick="setPalette('rainbow')">
+<div class="w-4 h-4 palette-rainbow rounded-full"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Rainbow</span>
+</button>
+<button class="palette-btn px-4 py-2 border border-outline-variant hover:bg-surface-container-high rounded-lg flex items-center gap-2 group" onclick="setPalette('fire')">
+<div class="w-4 h-4 palette-fire rounded-full"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">Fire</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<span class="font-label-caps text-label-caps text-on-surface-variant">Range</span>
+<div class="bg-surface-container-lowest px-3 py-1 border border-outline-variant rounded font-mono-data text-mono-data">
+                            18°C — 45°C
+                        </div>
+</div>
+</section>
+</div>
+<!-- Right: Telemetry & List -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-gutter">
+<section class="bg-surface border border-outline-variant rounded-xl overflow-hidden flex flex-col h-full">
+<div class="p-gutter border-b border-outline-variant bg-surface-container-low">
+<h3 class="font-title-sm text-title-sm text-on-surface">Array Telemetry</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Highest temperature pixel detection</p>
+</div>
+<div class="flex-1 overflow-y-auto">
+<table class="w-full text-left">
+<thead class="sticky top-0 bg-surface border-b border-outline-variant z-10">
+<tr>
+<th class="px-4 py-3 font-label-caps text-label-caps text-on-surface-variant">RANK</th>
+<th class="px-4 py-3 font-label-caps text-label-caps text-on-surface-variant">COORD</th>
+<th class="px-4 py-3 font-label-caps text-label-caps text-on-surface-variant">VALUE</th>
+<th class="px-4 py-3 font-label-caps text-label-caps text-on-surface-variant text-right">STATUS</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30 font-mono-data text-mono-data" id="telemetry-body">
+<!-- Data rows -->
+</tbody>
+</table>
+</div>
+<div class="p-4 border-t border-outline-variant bg-surface-container-low">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant">System Latency</span>
+<span class="font-mono-data text-mono-data text-primary">12ms</span>
+</div>
+<div class="w-full bg-outline-variant/20 h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-[12%]" id="latency-bar"></div>
+</div>
+</div>
+</section>
+<section class="bg-surface border border-outline-variant p- gutter rounded-xl">
+<div class="flex items-center gap-3 mb-4">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+<h3 class="font-label-caps text-label-caps text-on-surface">Thermal Thresholds</h3>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Critical Alarm</span>
+<span class="text-error font-mono-data">50.0°C</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Caution Warning</span>
+<span class="text-primary-fixed-dim font-mono-data">40.0°C</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-on-surface-variant">Delta-T Limit</span>
+<span class="text-on-surface font-mono-data">+15.0°C</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<script>
+        const grid = document.getElementById('thermal-grid');
+        const telemetryBody = document.getElementById('telemetry-body');
+        const hudCoord = document.getElementById('hud-coord');
+        const hudPeak = document.getElementById('hud-peak');
+        const hudAvg = document.getElementById('hud-avg');
+        const reticle = document.getElementById('reticle');
+
+        const rows = 24;
+        const cols = 32;
+        let currentPalette = 'ironbow';
+
+        const palettes = {
+            ironbow: ['#000', '#41107b', '#d03e1b', '#f1e529'],
+            rainbow: ['#0000ff', '#00ffff', '#00ff00', '#ffff00', '#ff0000'],
+            fire: ['#000', '#800000', '#ff8000', '#ffff00', '#ffffff']
+        };
+
+        function interpolateColor(color1, color2, factor) {
+            const r1 = parseInt(color1.substring(1,3), 16);
+            const g1 = parseInt(color1.substring(3,5), 16);
+            const b1 = parseInt(color1.substring(5,7), 16);
+            const r2 = parseInt(color2.substring(1,3), 16);
+            const g2 = parseInt(color2.substring(3,5), 16);
+            const b2 = parseInt(color2.substring(5,7), 16);
+            const r = Math.round(r1 + (r2 - r1) * factor);
+            const g = Math.round(g1 + (g2 - g1) * factor);
+            const b = Math.round(b1 + (b2 - b1) * factor);
+            return `rgb(${r},${g},${b})`;
+        }
+
+        function getThermalColor(val, paletteName) {
+            const colors = palettes[paletteName];
+            const sections = colors.length - 1;
+            const pos = val * sections;
+            const index = Math.floor(pos);
+            const factor = pos - index;
+            if (index >= sections) return colors[colors.length - 1];
+            return interpolateColor(colors[index], colors[index+1], factor);
+        }
+
+        // Initialize grid
+        const pixels = [];
+        for (let i = 0; i < rows * cols; i++) {
+            const pixel = document.createElement('div');
+            pixel.className = 'thermal-pixel';
+            grid.appendChild(pixel);
+            pixels.push(pixel);
+        }
+
+        function updateThermalData() {
+            let maxTemp = 0;
+            let maxIdx = 0;
+            let totalTemp = 0;
+            const tempValues = [];
+
+            // Generate synthetic heat map
+            const center1 = { x: 18 + Math.sin(Date.now() / 1000) * 5, y: 12 + Math.cos(Date.now() / 1200) * 3 };
+            const center2 = { x: 8, y: 18 };
+
+            for (let y = 0; y < rows; y++) {
+                for (let x = 0; x < cols; x++) {
+                    const idx = y * cols + x;
+                    
+                    // Base ambient temp around 22C
+                    let temp = 22 + Math.random() * 0.5;
+                    
+                    // Heat source 1
+                    const d1 = Math.sqrt((x - center1.x)**2 + (y - center1.y)**2);
+                    temp += Math.max(0, 20 * Math.exp(-d1/4));
+
+                    // Heat source 2
+                    const d2 = Math.sqrt((x - center2.x)**2 + (y - center2.y)**2);
+                    temp += Math.max(0, 10 * Math.exp(-d2/2));
+
+                    const norm = Math.min(1, Math.max(0, (temp - 18) / 30));
+                    pixels[idx].style.backgroundColor = getThermalColor(norm, currentPalette);
+                    
+                    tempValues.push({ x, y, temp });
+                    totalTemp += temp;
+                    if (temp > maxTemp) {
+                        maxTemp = temp;
+                        maxIdx = idx;
+                    }
+                }
+            }
+
+            // Update UI
+            const peak = tempValues[maxIdx];
+            hudPeak.innerText = maxTemp.toFixed(1) + '°C';
+            hudAvg.innerText = (totalTemp / (rows * cols)).toFixed(1) + '°C';
+            hudCoord.innerText = `X: ${String(peak.x).padStart(2, '0')}, Y: ${String(peak.y).padStart(2, '0')}`;
+            
+            // Reticle positioning
+            const gridRect = grid.getBoundingClientRect();
+            const pxWidth = gridRect.width / cols;
+            const pxHeight = gridRect.height / rows;
+            reticle.style.left = (peak.x * pxWidth + pxWidth/2) + 'px';
+            reticle.style.top = (peak.y * pxHeight + pxHeight/2) + 'px';
+
+            // Telemetry table
+            const sorted = tempValues.sort((a, b) => b.temp - a.temp).slice(0, 10);
+            telemetryBody.innerHTML = sorted.map((d, i) => `
+                <tr class="hover:bg-surface-container-high transition-colors">
+                    <td class="px-4 py-2 opacity-50">#${i+1}</td>
+                    <td class="px-4 py-2">${String(d.x).padStart(2, '0')},${String(d.y).padStart(2, '0')}</td>
+                    <td class="px-4 py-2 ${d.temp > 40 ? 'text-error' : 'text-on-surface'}">${d.temp.toFixed(2)}°C</td>
+                    <td class="px-4 py-2 text-right">
+                        <span class="inline-block w-2 h-2 rounded-full ${d.temp > 40 ? 'bg-error shadow-[0_0_8px_#ffb4ab]' : 'bg-surface-tint'}"></span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function setPalette(name) {
+            currentPalette = name;
+            document.querySelectorAll('.palette-btn').forEach(btn => {
+                btn.classList.remove('border-primary-container', 'bg-surface-container-high');
+                btn.classList.add('border-outline-variant');
+                btn.querySelector('span').classList.replace('text-on-surface', 'text-on-surface-variant');
+            });
+            event.currentTarget.classList.add('border-primary-container', 'bg-surface-container-high');
+            event.currentTarget.classList.remove('border-outline-variant');
+            event.currentTarget.querySelector('span').classList.replace('text-on-surface-variant', 'text-on-surface');
+            updateThermalData();
+        }
+
+        setInterval(updateThermalData, 125); // ~8 FPS
+        updateThermalData();
+    </script>
+</body></html>
