@@ -1,99 +1,37 @@
 import { useState } from "react";
 import { createBrowserRouter, Link, Outlet, useLocation } from "react-router";
-import {
-  Activity, AlertTriangle, ChevronRight, CircleHelp, Cpu, Database,
-  Download, Droplets, Flame, Gauge, Home, LayoutDashboard, Power, RefreshCw,
-  Settings, Thermometer, Zap, ShieldAlert
-} from "lucide-react";
 import { toast } from "sonner";
 
 import { useTelemetry } from "./context/TelemetryContext";
 import { ApiService } from "./services/api";
-import { SensorCard } from "./components/thermalguard/SensorCard";
 import { SidebarNav } from "./components/thermalguard/SidebarNav";
 import { TopHeader } from "./components/thermalguard/TopHeader";
-import { TemperatureChart } from "./components/thermalguard/TemperatureChart";
-import { PowerChart } from "./components/thermalguard/PowerChart";
-import { AlertCard } from "./components/thermalguard/AlertCard";
-import { DeviceHealthWidget } from "./components/thermalguard/DeviceHealthWidget";
-import { DeviceCard } from "./components/thermalguard/DeviceCard";
-import { EventTimeline } from "./components/thermalguard/EventTimeline";
-import { GaugeMeter } from "./components/thermalguard/GaugeMeter";
-import { TrendIndicator } from "./components/thermalguard/TrendIndicator";
 import { ThermalHeatmap } from "./components/thermalguard/ThermalHeatmap";
 
-// 1-to-1 Hardware Mapped Components
-import { RelayControlPanel } from "./components/hardware/RelayControlPanel";
-import { BuzzerAlarmPanel } from "./components/hardware/BuzzerAlarmPanel";
-import { EnvironmentalCard } from "./components/hardware/EnvironmentalCard";
-import { CurrentLoadChart } from "./components/hardware/CurrentLoadChart";
-
 const nav = [
-  ["/", LayoutDashboard, "Dashboard"],
-  ["/thermal-monitor", Activity, "Thermal Monitor"],
-  ["/analytics", Gauge, "Analytics"],
-  ["/alerts", AlertTriangle, "Alerts"],
-  ["/logs", Database, "Logs"],
-  ["/devices", Cpu, "Devices"],
+  ["/", "dashboard", "Dashboard"],
+  ["/thermal-monitor", "thermostat", "Thermal Monitor"],
+  ["/analytics", "analytics", "Analytics"],
+  ["/alerts", "notifications_active", "Alerts"],
+  ["/logs", "description", "Logs"],
+  ["/devices", "developer_board", "Devices"],
 ] as const;
 
 const secondaryNav = [
-  ["/settings", Settings, "Settings"],
-  ["/about", CircleHelp, "About"],
+  ["/settings", "settings", "Settings"],
+  ["/about", "info", "About"],
 ] as const;
-
-function Panel({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <section className={`rounded border border-[#434655] bg-[#111318] p-5 transition-colors duration-150 ${className}`}>
-      {children}
-    </section>
-  );
-}
-
-function PageHead({
-  title,
-  description,
-  action,
-}: {
-  title: string;
-  description: string;
-  action?: React.ReactNode;
-}) {
-  return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-[#434655] pb-4">
-      <div>
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-[#2563eb]" />
-          <p className="font-mono text-xs font-medium text-[#8d90a0]">
-            ESP32 Node #192.168.1.48 · Substation B
-          </p>
-        </div>
-        <h2 className="mt-1 font-sans text-24px font-semibold tracking-tight text-[#e2e2e9]">
-          {title}
-        </h2>
-        <p className="mt-1 text-sm text-[#c3c6d7] font-normal">{description}</p>
-      </div>
-      {action && <div className="flex items-center gap-3">{action}</div>}
-    </div>
-  );
-}
 
 function Shell() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
-  const { lastSyncTime, mode } = useTelemetry();
+  const { mode } = useTelemetry();
   const page =
     [...nav, ...secondaryNav].find(([path]) => path === location.pathname)?.[2] ??
     "Dashboard";
 
   return (
-    <div className="min-h-screen bg-[#111318] font-[Inter] text-[#e2e2e9]">
+    <div className="min-h-screen bg-[#111318] font-[Inter] text-[#e2e2e9] flex flex-col">
       <SidebarNav
         navItems={nav}
         secondaryNavItems={secondaryNav}
@@ -101,594 +39,763 @@ function Shell() {
         setOpen={setOpen}
       />
 
-      <main className="lg:pl-[240px]">
+      <main className="lg:ml-[240px] flex-1 flex flex-col min-h-screen bg-[#111318]">
         <TopHeader pageName={page} onOpenMobileMenu={() => setOpen(true)} />
 
-        <div className="mx-auto max-w-[1600px] p-6 lg:p-8">
+        <div className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <Outlet />
         </div>
 
-        <footer className="mx-6 mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[#434655] pt-4 font-mono text-xs text-[#8d90a0] lg:mx-8">
-          <span>
-            ESP32 Firmware <b className="font-semibold text-[#c3c6d7]">v2.4.1</b>
-          </span>
-          <span>•</span>
-          <span>
-            Mode <b className="font-semibold text-[#2563eb] uppercase">{mode}</b>
-          </span>
-          <span>•</span>
-          <span>
-            Last sync <b className="font-semibold text-[#16A34A]">{lastSyncTime}</b>
-          </span>
-          <span className="ml-auto flex items-center gap-1.5 text-[#16A34A] font-medium">
-            <span className="h-2 w-2 rounded-full bg-[#16A34A]" />
-            Telemetry Stream Active
-          </span>
+        <footer className="h-8 bg-[#0c0e13] border-t border-[#434655] flex items-center justify-between px-6 font-['JetBrains_Mono'] text-[10px] text-[#c3c6d7] uppercase">
+          <div className="flex gap-6 items-center">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#b4c5ff]"></span>
+              <span>MTBF: 12,400 hrs</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#b4c5ff]"></span>
+              <span>Firmware: v2.4.1-STABLE</span>
+            </div>
+          </div>
+          <div>
+            LATENCY: 14ms | MODE: {mode.toUpperCase()}
+          </div>
         </footer>
       </main>
     </div>
   );
 }
 
+/* =========================================================================
+   1. DASHBOARD VIEW (operations_dashboard/code.html)
+   ========================================================================= */
 function Dashboard() {
   const { sensorMetrics, sensorStatus } = useTelemetry();
+  const [relayAuto, setRelayAuto] = useState(true);
+  const [relayActive, setRelayActive] = useState(true);
+  const [buzzerMuted, setBuzzerMuted] = useState(false);
 
-  const sensorCardsList = [
-    {
-      icon: Flame,
-      label: "MLX90640 Max Hotspot",
-      value: String(sensorMetrics.hotspotTemp),
-      unit: "°C",
-      status: sensorStatus.mlx90640Connected ? "Normal" : "Disconnected",
-      color: "text-[#D97706]",
-      bgColor: "bg-[#D97706]/10",
-      stroke: "#D97706",
-      fillGrad: "",
-      data: [22, 28, 25, 39, 34, 47, 42, 51, 46, 59, 53, sensorMetrics.hotspotTemp],
-    },
-    {
-      icon: Thermometer,
-      label: "DHT11 Ambient Temp",
-      value: String(sensorMetrics.ambientTemp),
-      unit: "°C",
-      status: sensorStatus.dht11Connected ? "Normal" : "Disconnected",
-      color: "text-[#2563eb]",
-      bgColor: "bg-[#2563eb]/10",
-      stroke: "#2563eb",
-      fillGrad: "",
-      data: [39, 42, 38, 45, 41, 49, 45, 52, 48, 50, 47, sensorMetrics.ambientTemp],
-    },
-    {
-      icon: Droplets,
-      label: "DHT11 Relative Humidity",
-      value: String(sensorMetrics.humidity),
-      unit: "% RH",
-      status: sensorStatus.dht11Connected ? "Optimal" : "Disconnected",
-      color: "text-[#06b6d4]",
-      bgColor: "bg-[#06b6d4]/10",
-      stroke: "#06b6d4",
-      fillGrad: "",
-      data: [58, 54, 57, 50, 54, 46, 49, 42, 46, 39, 43, sensorMetrics.humidity],
-    },
-    {
-      icon: Zap,
-      label: "ACS712 Line Current",
-      value: String(sensorMetrics.lineCurrent),
-      unit: "A",
-      status: sensorStatus.acs712Connected ? "Normal" : "Disconnected",
-      color: "text-[#8b5cf6]",
-      bgColor: "bg-[#8b5cf6]/10",
-      stroke: "#8b5cf6",
-      fillGrad: "",
-      data: [31, 36, 34, 44, 39, 48, 43, 51, 46, 57, 50, sensorMetrics.lineCurrent],
-    },
-  ];
+  const handleTestBuzzer = () => {
+    toast.info("Buzzer Test Initiated (GPIO 19)", {
+      description: "Triggered 100ms hardware alert signal.",
+    });
+  };
 
-  return (
-    <>
-      {/* Clean Technical Status Banner */}
-      <div className="rounded border border-[#434655] bg-[#1e1f25] p-6 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-6">
-          <div className="max-w-2xl">
-            <div className="mb-3 inline-flex items-center gap-2 rounded border border-[#16A34A]/30 bg-[#16A34A]/10 px-2.5 py-0.5 font-mono text-xs font-semibold text-[#16A34A]">
-              <span className="h-2 w-2 rounded-full bg-[#16A34A]" />
-              SUBSTATION B PANEL 04 · INTERLOCK ACTIVE
-            </div>
-            <h2 className="text-24px font-bold text-[#e2e2e9]">
-              Thermal Degradation &amp; Overcurrent Monitor
-            </h2>
-            <p className="mt-1.5 text-sm text-[#c3c6d7]">
-              Real-time monitoring of thermal hotspots (MLX90640) and line current load (ACS712) on ESP32 Node 192.168.1.48.
-            </p>
-          </div>
+  const handleToggleRelayMode = () => {
+    setRelayAuto(!relayAuto);
+    toast.success(`Relay Control Set to ${!relayAuto ? "AUTO" : "MANUAL"}`, {
+      description: "GPIO 18 Interlock logic updated.",
+    });
+  };
 
-          <div className="rounded border border-[#434655] bg-[#111318] p-3">
-            <GaugeMeter value={99.4} label="Thermal Security" sublabel="PASS" color="#16A34A" size={120} />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Grid Content */}
-      <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-6">
-          <PageHead
-            title="Telemetry Channel Grid"
-            description="Continuous sensor readings polled from ESP32 REST Gateway"
-          />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            {sensorCardsList.map((sensor, idx) => (
-              <SensorCard key={sensor.label} id={`sensor-${idx}`} {...sensor} />
-            ))}
-          </div>
-
-          <EnvironmentalCard />
-          <TemperatureChart />
-        </div>
-
-        <aside className="space-y-6">
-          <RelayControlPanel />
-          <BuzzerAlarmPanel />
-          <DeviceHealthWidget />
-          <EventTimeline />
-        </aside>
-      </div>
-    </>
-  );
-}
-
-function ThermalMonitor() {
-  const { mode } = useTelemetry();
-
-  return (
-    <>
-      <PageHead
-        title="MLX90640 Spatial Thermal Array"
-        description="32×24 spatial thermal camera matrix (I2C Bus 0x33)"
-        action={
-          <span className="flex items-center gap-1.5 rounded border border-[#16A34A]/30 bg-[#16A34A]/10 px-3 py-1 font-mono text-xs font-semibold text-[#16A34A]">
-            <span className="h-2 w-2 rounded-full bg-[#16A34A]" /> 8.0 FPS · {mode.toUpperCase()}
-          </span>
-        }
-      />
-
-      <Panel className="overflow-hidden">
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_280px]">
-          <ThermalHeatmap />
-
-          <div className="border-t border-[#434655] bg-[#111318] p-5 lg:border-l lg:border-t-0 font-mono text-xs">
-            <p className="font-semibold text-[#c3c6d7] uppercase">
-              Thermal Calibration Scale
-            </p>
-            <div className="mt-2 h-2.5 rounded bg-gradient-to-r from-blue-900 via-cyan-400 to-rose-600" />
-            <div className="mt-1 flex justify-between text-[#8d90a0] font-semibold text-[10px]">
-              <span>18°C</span>
-              <span>31°C</span>
-              <span>45°C</span>
-            </div>
-
-            <p className="mt-6 font-semibold text-[#c3c6d7] uppercase">
-              Array Telemetry
-            </p>
-            <dl className="mt-3 space-y-3">
-              {[
-                ["Maximum Hotspot", "42.8 °C", "text-[#D97706]"],
-                ["Minimum Ambient", "22.1 °C", "text-[#2563eb]"],
-                ["Mean Grid Temp", "29.6 °C", "text-[#e2e2e9]"],
-                ["Hotspot Index", "X: 22, Y: 14", "text-[#06b6d4]"],
-                ["Frame Rate", "8.0 FPS", "text-[#16A34A]"],
-              ].map(([key, val, valColor]) => (
-                <div className="flex justify-between items-center border-b border-[#434655]/50 pb-2" key={key}>
-                  <dt className="text-[#c3c6d7] font-sans">{key}</dt>
-                  <dd className={`font-bold ${valColor}`}>{val}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        </div>
-      </Panel>
-    </>
-  );
-}
-
-function Analytics() {
-  const { sensorMetrics } = useTelemetry();
-
-  const cards = [
-    { label: "Peak Thermal Delta", val: `${sensorMetrics.hotspotTemp}°C`, delta: "+6.2%", isUp: true, colorClass: "text-[#D97706]", toneClass: "bg-[#D97706]/10" },
-    { label: "Energy Consumption", val: "1.84 kWh", delta: "−2.4%", isUp: false, colorClass: "text-[#2563eb]", toneClass: "bg-[#2563eb]/10" },
-    { label: "Safety Trip Events", val: "0 Active", delta: "Nominal", isUp: false, colorClass: "text-[#16A34A]", toneClass: "bg-[#16A34A]/10" },
-  ];
-
-  return (
-    <>
-      <PageHead
-        title="Power & Load Analytics"
-        description="ACS712 current load curves and 24-hour power profiles"
-      />
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {cards.map((c) => (
-          <Panel key={c.label}>
-            <p className="text-xs font-medium text-[#c3c6d7]">{c.label}</p>
-            <p className="mt-2 font-mono text-32px font-bold tracking-tight text-[#e2e2e9]">{c.val}</p>
-            <div className="mt-2">
-              <TrendIndicator
-                value={c.delta}
-                label="vs baseline"
-                isUp={c.isUp}
-                colorClass={c.colorClass}
-                toneClass={c.toneClass}
-              />
-            </div>
-          </Panel>
-        ))}
-      </div>
-
-      <div className="mt-6">
-        <CurrentLoadChart />
-      </div>
-
-      <div className="mt-6">
-        <PowerChart />
-      </div>
-    </>
-  );
-}
-
-function Alerts() {
-  const alertsList = [
-    {
-      level: "Critical",
-      title: "Current Overload Threshold Trip",
-      text: "ACS712 (ADC 34) registered 10.1A peak on Line A. GPIO 18 Relay disengaged load line.",
-      time: "09:42:18",
-      badgeTone: "bg-[#ffb4ab]/10 text-[#ffb4ab] border-[#ffb4ab]/30",
-      iconTone: "bg-[#ffb4ab]/10 text-[#ffb4ab]",
-    },
-    {
-      level: "Warning",
-      title: "Elevated Hotspot Delta Warning",
-      text: "MLX90640 registered 4.1°C thermal rise over ambient baseline on Busbar 04.",
-      time: "08:53:02",
-      badgeTone: "bg-[#D97706]/10 text-[#D97706] border-[#D97706]/30",
-      iconTone: "bg-[#D97706]/10 text-[#D97706]",
-    },
-    {
-      level: "Info",
-      title: "Self-Diagnostic Routine Passed",
-      text: "ESP32 self-test verified communication on I2C (0x33 MLX90640), GPIO 4 (DHT11), and GPIO 18 (Relay).",
-      time: "Yesterday",
-      badgeTone: "bg-[#2563eb]/10 text-[#b4c5ff] border-[#2563eb]/30",
-      iconTone: "bg-[#2563eb]/10 text-[#b4c5ff]",
-    },
-  ];
-
-  return (
-    <>
-      <PageHead
-        title="Safety Incidents & Alarm Log"
-        description="Log of automated relay trip triggers and acoustic warnings (GPIO 19)"
-      />
-
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="space-y-4">
-          {alertsList.map((alert) => (
-            <AlertCard key={alert.title} {...alert} />
-          ))}
-        </div>
-
-        <div>
-          <BuzzerAlarmPanel />
-        </div>
-      </div>
-    </>
-  );
-}
-
-function Logs() {
-  const { sensorMetrics } = useTelemetry();
-
-  const rows = [
-    [sensorMetrics.timestamp, `${sensorMetrics.hotspotTemp}°C`, `${sensorMetrics.lineCurrent}A`, "Triggered", "Open", "Critical"],
-    ["09:37:02", "38.2°C", "8.4A", "Clear", "Closed", "Normal"],
-    ["09:21:44", "35.6°C", "7.9A", "Clear", "Closed", "Normal"],
-    ["08:53:12", "40.1°C", "8.8A", "Warning", "Open", "Warning"],
-  ];
-
-  const handleExportCSV = () => {
-    toast.success("CSV Export Initiated", {
-      description: "Downloading telemetry_event_log_2026.csv...",
+  const handleToggleRelayState = () => {
+    setRelayActive(!relayActive);
+    toast.warning(`Relay State: ${!relayActive ? "ACTIVE (CLOSED)" : "TRIPPED (OPEN)"}`, {
+      description: "GPIO 18 output toggled.",
     });
   };
 
   return (
-    <>
-      <PageHead
-        title="Raw Telemetry & Event Logs"
-        description="High-resolution time-series sensor output logged from ESP32 memory"
-        action={
-          <button
-            onClick={handleExportCSV}
-            className="flex items-center gap-2 rounded border border-[#434655] bg-[#1e1f25] px-3.5 py-1.5 text-xs font-semibold text-[#e2e2e9] hover:bg-[#282a2f] transition-colors"
-          >
-            <Download size={14} /> Export Telemetry CSV
-          </button>
-        }
-      />
+    <div className="grid grid-cols-12 gap-4 content-start">
+      {/* Top Row: Security Index & Sensor Metrics */}
+      <div className="col-span-12 lg:col-span-4 bg-[#111318] border border-[#434655] p-4 flex flex-col justify-between relative overflow-hidden">
+        <div className="flex justify-between items-start z-10">
+          <div>
+            <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">
+              System Security Index
+            </p>
+            <p className="font-['JetBrains_Mono'] text-[32px] font-bold text-[#b4c5ff] mt-1">
+              99.4% <span className="text-[18px] font-normal text-[#e2e2e9]">Pass</span>
+            </p>
+          </div>
+          <span className="material-symbols-outlined text-[#b4c5ff] text-4xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+            security
+          </span>
+        </div>
 
-      <Panel className="overflow-hidden">
+        <div className="mt-4 z-10">
+          <div className="w-full bg-[#33353a] h-1.5 rounded-full overflow-hidden">
+            <div className="bg-[#b4c5ff] h-full" style={{ width: "99.4%" }}></div>
+          </div>
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] mt-2 text-[#c3c6d7]">
+            Protocol Integrity: Verified
+          </p>
+        </div>
+      </div>
+
+      <div className="col-span-12 lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Metric 1: Hotspot Max */}
+        <div className="bg-[#111318] border border-[#434655] p-4">
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">
+            HOTSPOT MAX
+          </p>
+          <p className="font-['JetBrains_Mono'] text-[32px] font-bold text-[#e2e2e9] mt-2">
+            {sensorMetrics.hotspotTemp}
+            <span className="text-[14px] ml-1 font-normal text-[#c3c6d7]">°C</span>
+          </p>
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#ffb4ab] mt-2 flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">trending_up</span> +2.1%
+          </p>
+        </div>
+
+        {/* Metric 2: Ambient Temp */}
+        <div className="bg-[#111318] border border-[#434655] p-4">
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">
+            AMBIENT TEMP
+          </p>
+          <p className="font-['JetBrains_Mono'] text-[32px] font-bold text-[#e2e2e9] mt-2">
+            {sensorMetrics.ambientTemp}
+            <span className="text-[14px] ml-1 font-normal text-[#c3c6d7]">°C</span>
+          </p>
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#b4c5ff] mt-2 flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">image_arrow_up</span> NOMINAL
+          </p>
+        </div>
+
+        {/* Metric 3: Line Current */}
+        <div className="bg-[#111318] border border-[#434655] p-4">
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">
+            LINE CURRENT
+          </p>
+          <p className="font-['JetBrains_Mono'] text-[32px] font-bold text-[#e2e2e9] mt-2">
+            {sensorMetrics.lineCurrent}
+            <span className="text-[14px] ml-1 font-normal text-[#c3c6d7]">A</span>
+          </p>
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7] mt-2">
+            PIN: GPIO 34
+          </p>
+        </div>
+
+        {/* Metric 4: Humidity */}
+        <div className="bg-[#111318] border border-[#434655] p-4">
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">
+            HUMIDITY
+          </p>
+          <p className="font-['JetBrains_Mono'] text-[32px] font-bold text-[#e2e2e9] mt-2">
+            {sensorMetrics.humidity}
+            <span className="text-[14px] ml-1 font-normal text-[#c3c6d7]">%</span>
+          </p>
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7] mt-2">
+            DHT11 Sensor
+          </p>
+        </div>
+      </div>
+
+      {/* Middle Row: Temperature History Chart & Environmental / Relay Panels */}
+      <div className="col-span-12 lg:col-span-9 bg-[#111318] border border-[#434655] flex flex-col h-[380px]">
+        <div className="px-4 py-3 border-b border-[#434655] flex justify-between items-center">
+          <h3 className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#e2e2e9]">
+            24h Temperature History (Primary Bus)
+          </h3>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-[#2563eb]"></span>
+            <span className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">
+              Node_01_Temp
+            </span>
+          </div>
+        </div>
+        <div className="flex-1 p-4 relative bg-[#0c0e13]">
+          <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+            <path d="M0,80 Q10,75 20,60 T40,65 T60,40 T80,45 T100,30" fill="none" stroke="#2563eb" strokeWidth="1.5" />
+            <path d="M0,80 Q10,75 20,60 T40,65 T60,40 T80,45 T100,30 L100,100 L0,100 Z" fill="url(#grad)" opacity="0.15" />
+            <defs>
+              <linearGradient id="grad" x1="0%" x2="0%" y1="0%" y2="100%">
+                <stop offset="0%" style={{ stopColor: "#2563eb", stopOpacity: 1 }} />
+                <stop offset="100%" style={{ stopColor: "#2563eb", stopOpacity: 0 }} />
+              </linearGradient>
+            </defs>
+          </svg>
+
+          {/* Marker Tooltip */}
+          <div className="absolute left-[60%] top-[35%] flex flex-col items-center">
+            <div className="w-3 h-3 bg-white border-2 border-[#2563eb] rounded-full mb-1"></div>
+            <div className="bg-[#33353a] border border-[#434655] p-2 rounded text-[10px] font-['JetBrains_Mono'] text-[#e2e2e9]">
+              VAL: {sensorMetrics.hotspotTemp}°C<br />
+              TS: 14:32:01
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Right Column: DHT11 & Relay Panel */}
+      <div className="col-span-12 lg:col-span-3 flex flex-col gap-4">
+        {/* DHT11 Environmental */}
+        <div className="bg-[#111318] border border-[#434655] p-4 flex-1 flex flex-col justify-between">
+          <div>
+            <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">
+              DHT11 Environmental
+            </p>
+            <div className="flex items-end gap-2 mt-2">
+              <span className="font-['JetBrains_Mono'] text-[24px] font-bold text-[#e2e2e9]">
+                {sensorMetrics.ambientTemp}°C
+              </span>
+              <span className="font-['JetBrains_Mono'] text-[24px] text-[#c3c6d7] opacity-40">/</span>
+              <span className="font-['JetBrains_Mono'] text-[24px] font-bold text-[#e2e2e9]">
+                {sensorMetrics.humidity}% RH
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2 border-t border-[#434655] pt-3">
+            <div className="flex justify-between font-[Inter] text-[11px] text-[#c3c6d7]">
+              <span>Dew Point</span>
+              <span className="text-[#e2e2e9] font-mono">11.2°C</span>
+            </div>
+            <div className="flex justify-between font-[Inter] text-[11px] text-[#c3c6d7]">
+              <span>Heat Index</span>
+              <span className="text-[#e2e2e9] font-mono">25.1°C</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Relay Control Panel */}
+        <div className="bg-[#111318] border border-[#434655] p-4 flex-1 flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">
+                GPIO 18 Relay
+              </p>
+              <h4 className="font-[Inter] text-[18px] font-bold text-[#e2e2e9]">Aux Cooling</h4>
+            </div>
+            <button onClick={handleToggleRelayState} title="Toggle Relay Interlock Output">
+              <span
+                className={`material-symbols-outlined cursor-pointer ${
+                  relayActive ? "text-[#2563eb]" : "text-[#ffb4ab]"
+                }`}
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >
+                power_settings_new
+              </span>
+            </button>
+          </div>
+
+          <div className="mt-3 flex bg-[#1a1b21] p-1 rounded border border-[#434655]">
+            <button
+              onClick={handleToggleRelayMode}
+              className={`flex-1 text-center py-1 font-[Inter] text-[11px] font-bold rounded ${
+                relayAuto ? "bg-[#2563eb] text-[#eeefff]" : "text-[#c3c6d7]"
+              }`}
+            >
+              AUTO
+            </button>
+            <button
+              onClick={handleToggleRelayMode}
+              className={`flex-1 text-center py-1 font-[Inter] text-[11px] font-bold rounded ${
+                !relayAuto ? "bg-[#2563eb] text-[#eeefff]" : "text-[#c3c6d7]"
+              }`}
+            >
+              MANUAL
+            </button>
+          </div>
+
+          <div className="mt-3 flex items-center justify-between">
+            <span className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">Status:</span>
+            <span className={`px-2 py-0.5 font-[Inter] text-[11px] font-bold rounded ${
+              relayActive ? "bg-[#2563eb]/10 text-[#b4c5ff]" : "bg-[#ffb4ab]/10 text-[#ffb4ab]"
+            }`}>
+              {relayActive ? "ACTIVE" : "TRIPPED"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Row: Buzzer, Health, Event Timeline */}
+      <div className="col-span-12 lg:col-span-3 bg-[#111318] border border-[#434655] p-4 flex flex-col justify-between">
+        <div>
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7] mb-3">
+            GPIO 19 Buzzer Alarm
+          </p>
+          <button
+            onClick={handleTestBuzzer}
+            className="w-full py-2 bg-[#33353a] border border-[#434655] font-[Inter] text-[11px] font-bold text-[#e2e2e9] hover:bg-[#434655] transition-all rounded"
+          >
+            TEST ALERT SYSTEM
+          </button>
+
+          <div className="mt-3 flex items-center justify-between p-3 bg-[#1a1b21] rounded border border-[#434655]">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[#c3c6d7]">
+                {buzzerMuted ? "notifications_off" : "notifications_active"}
+              </span>
+              <span className="font-[Inter] text-[14px]">Mute Audio</span>
+            </div>
+            <button
+              onClick={() => setBuzzerMuted(!buzzerMuted)}
+              className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors ${
+                buzzerMuted ? "bg-[#2563eb]" : "bg-[#33353a]"
+              }`}
+            >
+              <div
+                className={`w-4 h-4 rounded-full bg-white transition-transform ${
+                  buzzerMuted ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        <div className="pt-3 border-t border-[#434655] flex justify-between items-center text-[10px] font-['JetBrains_Mono'] uppercase">
+          <span className="text-[#c3c6d7]">Current State:</span>
+          <span className="text-[#b4c5ff] animate-pulse">Monitoring</span>
+        </div>
+      </div>
+
+      <div className="col-span-12 lg:col-span-3 bg-[#111318] border border-[#434655] p-4 flex flex-col gap-3">
+        <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">
+          Device Health
+        </p>
+
+        <div className="space-y-3 font-['JetBrains_Mono'] text-[12px]">
+          <div>
+            <div className="flex justify-between mb-1 text-[#c3c6d7]">
+              <span>CPU Usage</span>
+              <span className="text-[#e2e2e9]">14%</span>
+            </div>
+            <div className="w-full h-1.5 bg-[#33353a] rounded-full">
+              <div className="bg-[#2563eb] h-full rounded-full" style={{ width: "14%" }}></div>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between mb-1 text-[#c3c6d7]">
+              <span>SRAM (Free)</span>
+              <span className="text-[#e2e2e9]">184KB</span>
+            </div>
+            <div className="w-full h-1.5 bg-[#33353a] rounded-full">
+              <div className="bg-[#2563eb] h-full rounded-full" style={{ width: "65%" }}></div>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between mb-1 text-[#c3c6d7]">
+              <span>WiFi Signal (RSSI)</span>
+              <span className="text-[#e2e2e9]">-58 dBm</span>
+            </div>
+            <div className="w-full h-1.5 bg-[#33353a] rounded-full">
+              <div className="bg-[#2563eb] h-full rounded-full" style={{ width: "82%" }}></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="col-span-12 lg:col-span-6 bg-[#111318] border border-[#434655] flex flex-col">
+        <div className="px-4 py-3 border-b border-[#434655] flex justify-between items-center">
+          <h3 className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#e2e2e9]">
+            Recent Event Timeline
+          </h3>
+          <span className="material-symbols-outlined text-sm text-[#c3c6d7] cursor-pointer">refresh</span>
+        </div>
+
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px] text-left text-xs">
-            <thead className="border-b border-[#434655] bg-[#111318] font-mono text-[11px] uppercase tracking-wider text-[#8d90a0]">
+          <table className="w-full text-left font-[Inter] text-[13px]">
+            <thead className="bg-[#1a1b21] font-[Inter] text-[10px] font-bold text-[#c3c6d7] uppercase tracking-wider">
               <tr>
-                {["Timestamp", "Hotspot Temp", "Line Current", "Alarm Flag", "Relay State", "Status"].map((x) => (
-                  <th className="px-5 py-3 font-semibold" key={x}>
-                    {x}
-                  </th>
-                ))}
+                <th className="px-4 py-2 border-b border-[#434655]">Timestamp</th>
+                <th className="px-4 py-2 border-b border-[#434655]">Source</th>
+                <th className="px-4 py-2 border-b border-[#434655]">Event</th>
+                <th className="px-4 py-2 border-b border-[#434655]">Severity</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#434655]/50 font-mono">
-              {rows.map((row, i) => (
-                <tr className="hover:bg-[#1e1f25]/50 transition-colors" key={i}>
-                  <td className="px-5 py-3 text-[#e2e2e9] font-semibold">{row[0]}</td>
-                  <td className="px-5 py-3 text-[#D97706] font-bold">{row[1]}</td>
-                  <td className="px-5 py-3 text-[#8b5cf6] font-bold">{row[2]}</td>
-                  <td className="px-5 py-3 text-[#c3c6d7]">{row[3]}</td>
-                  <td className="px-5 py-3 text-[#c3c6d7]">{row[4]}</td>
-                  <td className="px-5 py-3">
-                    <span
-                      className={`inline-block rounded px-2 py-0.5 text-[10px] font-bold ${
-                        row[5] === "Critical"
-                          ? "bg-[#93000a]/30 text-[#ffb4ab] border border-[#ffb4ab]/30"
-                          : row[5] === "Warning"
-                          ? "bg-[#D97706]/20 text-[#D97706] border border-[#D97706]/30"
-                          : "bg-[#16A34A]/20 text-[#16A34A] border border-[#16A34A]/30"
-                      }`}
-                    >
-                      {row[5]}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+            <tbody className="font-['JetBrains_Mono'] text-[12px] divide-y divide-[#434655]">
+              <tr className="hover:bg-[#1e1f25] transition-colors">
+                <td className="px-4 py-2">14:52:01</td>
+                <td className="px-4 py-2 text-[#b4c5ff]">GPIO_18</td>
+                <td className="px-4 py-2 text-[#e2e2e9]">State change: HIGH (Auto)</td>
+                <td className="px-4 py-2">
+                  <span className="px-1.5 py-0.5 bg-[#33353a] rounded text-[10px] text-[#e2e2e9]">INFO</span>
+                </td>
+              </tr>
+              <tr className="hover:bg-[#1e1f25] transition-colors">
+                <td className="px-4 py-2">14:48:14</td>
+                <td className="px-4 py-2 text-[#ecf0ff]">SYS_CORE</td>
+                <td className="px-4 py-2 text-[#e2e2e9]">Watchdog timer reset</td>
+                <td className="px-4 py-2">
+                  <span className="px-1.5 py-0.5 bg-[#33353a] rounded text-[10px] text-[#e2e2e9]">DEBUG</span>
+                </td>
+              </tr>
+              <tr className="hover:bg-[#1e1f25] transition-colors">
+                <td className="px-4 py-2">14:45:00</td>
+                <td className="px-4 py-2 text-[#ffb4ab]">THRM_SENS</td>
+                <td className="px-4 py-2 text-[#ffb4ab]">Threshold breach &gt; 72.0°C</td>
+                <td className="px-4 py-2">
+                  <span className="px-1.5 py-0.5 bg-[#93000a] text-[#ffdad6] rounded text-[10px]">CRITICAL</span>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
-      </Panel>
-    </>
+      </div>
+    </div>
   );
 }
 
-function Devices() {
-  const { sensorMetrics, sensorStatus } = useTelemetry();
+/* =========================================================================
+   2. THERMAL MONITOR VIEW (thermal_monitor/code.html)
+   ========================================================================= */
+function ThermalMonitor() {
+  return (
+    <div className="space-y-6">
+      <ThermalHeatmap />
+    </div>
+  );
+}
 
-  const devices = [
-    { icon: Cpu, name: "ESP32 DevKit V1 Gateway", status: "Online", detail: "IP 192.168.1.48 · ESP-WROOM-32 (240MHz)" },
-    {
-      icon: Thermometer,
-      name: "DHT11 Environmental Sensor",
-      status: sensorStatus.dht11Connected ? "Connected" : "Disconnected",
-      detail: `${sensorMetrics.ambientTemp}°C · ${sensorMetrics.humidity}% RH · GPIO 4`,
-    },
-    {
-      icon: Activity,
-      name: "MLX90640 Thermal Camera Array",
-      status: sensorStatus.mlx90640Connected ? "Connected" : "Disconnected",
-      detail: `8.0 FPS · 32×24 Array · Peak ${sensorMetrics.hotspotTemp}°C · I2C 0x33`,
-    },
-    {
-      icon: Zap,
-      name: "ACS712 Current Sensor Module",
-      status: sensorStatus.acs712Connected ? "Connected" : "Disconnected",
-      detail: `${sensorMetrics.lineCurrent}A Load · ADC Pin 34 (185mV/A)`,
-    },
-    {
-      icon: Power,
-      name: "Safety Relay Interlock Circuit",
-      status: sensorStatus.relayConnected ? "Connected" : "Disconnected",
-      detail: "Active Protection Interlock · GPIO 18",
-    },
-  ];
+/* =========================================================================
+   3. ANALYTICS VIEW (analytics_load_curve/code.html)
+   ========================================================================= */
+function Analytics() {
+  const { sensorMetrics } = useTelemetry();
 
   return (
-    <>
-      <PageHead
-        title="Hardware Node Inventory"
-        description="Physical sensor mapping and GPIO pin assignments on ESP32 Node B"
-      />
+    <div className="space-y-6">
+      {/* Top Analytics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-[#111318] border border-[#434655] p-4">
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7] uppercase mb-1">
+            Peak Current Load
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="font-['JetBrains_Mono'] text-[32px] font-bold text-[#e2e2e9]">
+              {sensorMetrics.lineCurrent}
+            </span>
+            <span className="font-[Inter] text-[18px] text-[#c3c6d7]">A</span>
+          </div>
+          <p className="font-[Inter] text-[13px] text-[#ffb4ab] mt-1 flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">error</span> Threshold Limit: 10.0A
+          </p>
+        </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {devices.map((device) => (
-          <DeviceCard key={device.name} {...device} />
-        ))}
+        <div className="bg-[#111318] border border-[#434655] p-4">
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7] uppercase mb-1">
+            Hotspot Temp Delta
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="font-['JetBrains_Mono'] text-[32px] font-bold text-[#e2e2e9]">
+              {(sensorMetrics.hotspotTemp - sensorMetrics.ambientTemp).toFixed(1)}
+            </span>
+            <span className="font-[Inter] text-[18px] text-[#c3c6d7]">°C</span>
+          </div>
+          <p className="font-[Inter] text-[13px] text-[#b4c5ff] mt-1 flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">trending_up</span> Elevated Baseline
+          </p>
+        </div>
+
+        <div className="bg-[#111318] border border-[#434655] p-4">
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7] uppercase mb-1">
+            Avg System Efficiency
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="font-['JetBrains_Mono'] text-[32px] font-bold text-[#e2e2e9]">94.8</span>
+            <span className="font-[Inter] text-[18px] text-[#c3c6d7]">%</span>
+          </div>
+          <p className="font-[Inter] text-[13px] text-[#c3c6d7] mt-1 flex items-center gap-1">
+            <span className="material-symbols-outlined text-sm">horizontal_rule</span> Stable Baseline
+          </p>
+        </div>
+
+        <div className="bg-[#111318] border border-[#434655] p-4">
+          <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7] uppercase mb-1">
+            Calibration Specs
+          </p>
+          <div className="space-y-1 font-['JetBrains_Mono'] text-[12px] mt-2">
+            <div className="flex justify-between">
+              <span className="text-[#c3c6d7]">ADC Pin:</span>
+              <span className="text-[#e2e2e9]">GPIO 34</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[#c3c6d7]">Sensitivity:</span>
+              <span className="text-[#e2e2e9]">185 mV/A</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </>
+
+      {/* Main Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-[#111318] border border-[#434655] p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-[Inter] text-[18px] font-semibold text-[#e2e2e9] flex items-center gap-2">
+              <span className="w-2.5 h-2.5 bg-[#b4c5ff] rounded-full"></span>
+              ACS712 Current Load Curve
+            </h3>
+            <div className="flex gap-2">
+              <button className="bg-[#282a2f] border border-[#434655] px-3 py-1 font-[Inter] text-[11px] font-bold text-[#b4c5ff] rounded">
+                LIVE
+              </button>
+            </div>
+          </div>
+
+          <div className="relative h-[360px] w-full bg-[#0c0e13] border border-[#434655] overflow-hidden rounded">
+            <svg className="w-full h-full" preserveAspectRatio="none">
+              <line x1="0" x2="100%" y1="60" y2="60" stroke="#ffb4ab" strokeDasharray="3 3" strokeWidth="1.5" />
+              <path d="M0 280 L50 270 L100 290 L150 260 L200 240 L250 210 L300 220 L350 180 L400 190 L450 140 L500 130 L550 90 L600 110 L650 130 L700 150 L750 170 L800 190 L850 210 L900 230 L1000 240" fill="none" stroke="#2563eb" strokeWidth="2" />
+            </svg>
+            <div className="absolute left-4 top-[50px] font-['JetBrains_Mono'] text-[10px] text-[#ffb4ab] font-bold">
+              10.0A [OVERLOAD LIMIT]
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-[#111318] border border-[#434655] p-6 flex flex-col justify-between">
+          <h3 className="font-[Inter] text-[18px] font-semibold text-[#e2e2e9] mb-4">
+            Energy Profile (kWh)
+          </h3>
+          <div className="space-y-4 font-[Inter] text-[14px]">
+            <div className="flex justify-between items-center border-b border-[#434655] pb-2">
+              <span className="text-[#c3c6d7]">Total Consumption</span>
+              <span className="font-['JetBrains_Mono'] text-[#e2e2e9] font-bold">42.85 kWh</span>
+            </div>
+            <div className="flex justify-between items-center border-b border-[#434655] pb-2">
+              <span className="text-[#c3c6d7]">Estimated Cost</span>
+              <span className="font-['JetBrains_Mono'] text-[#e2e2e9] font-bold">$14.12</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[#c3c6d7]">Carbon Footprint</span>
+              <span className="font-['JetBrains_Mono'] text-[#4ade80] font-bold">8.2 kg CO2e</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
+/* =========================================================================
+   4. ALERTS VIEW (alerts_incident_feed/code.html)
+   ========================================================================= */
+function Alerts() {
+  const [incidents, setIncidents] = useState([
+    { id: 1, time: "2024-05-24 14:22:01.04", source: "MLX90640", desc: "Threshold Breach > 72.0C", level: "CRITICAL", ack: false },
+    { id: 2, time: "2024-05-24 14:21:45.82", source: "ACS712", desc: "Relay Interlock Trip - Overcurrent", level: "WARNING", ack: false },
+    { id: 3, time: "2024-05-24 14:19:12.11", source: "SYS_CORE", desc: "ADC Channel 34 Impedance Out of Range", level: "WARNING", ack: true },
+  ]);
+
+  const handleAck = (id: number) => {
+    setIncidents(incidents.map((i) => (i.id === id ? { ...i, ack: true } : i)));
+    toast.success("Incident Acknowledged", { description: `Alert #${id} marked as reviewed.` });
+  };
+
+  return (
+    <div className="grid grid-cols-12 gap-6">
+      <div className="col-span-12 lg:col-span-8 space-y-4">
+        <div className="bg-[#111318] border border-[#434655] p-3 flex items-center justify-between">
+          <h3 className="font-[Inter] text-[18px] font-bold text-[#e2e2e9]">Incident Log Feed</h3>
+          <span className="font-['JetBrains_Mono'] text-[12px] text-[#b4c5ff]">
+            {incidents.filter((i) => !i.ack).length} Active Alerts
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          {incidents.map((inc) => (
+            <div key={inc.id} className="bg-[#111318] border border-[#434655] p-4 flex items-center justify-between rounded">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 font-[Inter] text-[10px] font-bold rounded ${
+                    inc.level === "CRITICAL" ? "bg-[#93000a] text-[#ffdad6]" : "bg-[#33353a] text-[#b4c5ff]"
+                  }`}>
+                    {inc.level}
+                  </span>
+                  <span className="font-['JetBrains_Mono'] text-[12px] text-[#c3c6d7]">{inc.source}</span>
+                  <span className="font-['JetBrains_Mono'] text-[11px] text-[#c3c6d7]">{inc.time}</span>
+                </div>
+                <p className="mt-1 font-[Inter] text-[14px] font-semibold text-[#e2e2e9]">{inc.desc}</p>
+              </div>
+
+              {!inc.ack ? (
+                <button
+                  onClick={() => handleAck(inc.id)}
+                  className="px-3 py-1 bg-[#2563eb]/10 border border-[#2563eb]/30 text-[#b4c5ff] font-[Inter] text-[11px] font-bold rounded hover:bg-[#2563eb] hover:text-[#eeefff] transition-all"
+                >
+                  ACK
+                </button>
+              ) : (
+                <span className="font-[Inter] text-[11px] font-bold text-[#c3c6d7]">ACKNOWLEDGED</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="col-span-12 lg:col-span-4 bg-[#111318] border border-[#434655] p-6 rounded">
+        <h3 className="font-[Inter] text-[11px] font-bold uppercase tracking-wider text-[#c3c6d7] mb-4">
+          GPIO 19: Buzzer Hardware Map
+        </h3>
+        <button
+          onClick={() => toast.info("Hardware Alarm Signal Triggered")}
+          className="w-full bg-[#2563eb] text-[#eeefff] py-3 rounded font-[Inter] text-[11px] font-bold uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2"
+        >
+          <span className="material-symbols-outlined text-[18px]">campaign</span> Test Alarm System
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   5. LOGS VIEW (system_sensor_logs/code.html)
+   ========================================================================= */
+function Logs() {
+  const { sensorMetrics } = useTelemetry();
+
+  const handleExportCSV = () => {
+    toast.success("CSV Export Complete", {
+      description: "Downloaded telemetry_sensor_log_2026.csv",
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center bg-[#111318] border border-[#434655] p-4 rounded">
+        <div>
+          <h3 className="font-[Inter] text-[18px] font-bold text-[#e2e2e9]">System Telemetry Logs</h3>
+          <p className="font-[Inter] text-[13px] text-[#c3c6d7]">Raw time-series telemetry recorded by ESP32</p>
+        </div>
+        <button
+          onClick={handleExportCSV}
+          className="px-4 py-2 bg-[#2563eb] text-[#eeefff] font-[Inter] text-[11px] font-bold rounded hover:brightness-110 transition-all"
+        >
+          Export CSV Log
+        </button>
+      </div>
+
+      <div className="bg-[#111318] border border-[#434655] overflow-x-auto rounded">
+        <table className="w-full text-left font-['JetBrains_Mono'] text-[12px]">
+          <thead className="bg-[#1a1b21] border-b border-[#434655] text-[#c3c6d7] text-[10px] uppercase">
+            <tr>
+              <th className="p-3">Timestamp</th>
+              <th className="p-3">MLX90640 (°C)</th>
+              <th className="p-3">ACS712 (A)</th>
+              <th className="p-3">DHT11 Temp</th>
+              <th className="p-3">DHT11 Humidity</th>
+              <th className="p-3">Relay State</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[#434655]">
+            <tr className="hover:bg-[#1e1f25]">
+              <td className="p-3 text-[#e2e2e9]">{sensorMetrics.timestamp}</td>
+              <td className="p-3 text-[#ffb4ab] font-bold">{sensorMetrics.hotspotTemp}°C</td>
+              <td className="p-3 text-[#b4c5ff] font-bold">{sensorMetrics.lineCurrent}A</td>
+              <td className="p-3 text-[#e2e2e9]">{sensorMetrics.ambientTemp}°C</td>
+              <td className="p-3 text-[#e2e2e9]">{sensorMetrics.humidity}%</td>
+              <td className="p-3 text-[#b4c5ff]">CLOSED (OK)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   6. DEVICES VIEW (device_registry/code.html)
+   ========================================================================= */
+function Devices() {
+  const { sensorStatus } = useTelemetry();
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="bg-[#111318] border border-[#434655] p-5 rounded">
+        <div className="flex items-center justify-between">
+          <h4 className="font-[Inter] text-[16px] font-bold text-[#e2e2e9]">ESP32 DevKit V1 Gateway</h4>
+          <span className="px-2 py-0.5 bg-[#2563eb]/10 text-[#b4c5ff] font-[Inter] text-[11px] font-bold rounded">ONLINE</span>
+        </div>
+        <p className="font-['JetBrains_Mono'] text-[12px] text-[#c3c6d7] mt-2">IP: 192.168.1.48 · Xtensa Dual-Core 240MHz</p>
+      </div>
+
+      <div className="bg-[#111318] border border-[#434655] p-5 rounded">
+        <div className="flex items-center justify-between">
+          <h4 className="font-[Inter] text-[16px] font-bold text-[#e2e2e9]">MLX90640 Spatial IR Array</h4>
+          <span className={`px-2 py-0.5 font-[Inter] text-[11px] font-bold rounded ${
+            sensorStatus.mlx90640Connected ? "bg-[#2563eb]/10 text-[#b4c5ff]" : "bg-[#93000a] text-[#ffdad6]"
+          }`}>
+            {sensorStatus.mlx90640Connected ? "CONNECTED" : "DISCONNECTED"}
+          </span>
+        </div>
+        <p className="font-['JetBrains_Mono'] text-[12px] text-[#c3c6d7] mt-2">I2C Address: 0x33 · 32×24 Spatial Grid</p>
+      </div>
+    </div>
+  );
+}
+
+/* =========================================================================
+   7. SETTINGS VIEW (system_settings_thresholds/code.html)
+   ========================================================================= */
 function SettingsPage() {
-  const [saving, setSaving] = useState(false);
   const [tempThresh, setTempThresh] = useState("45");
   const [currLimit, setCurrLimit] = useState("10");
-  const [alarmDel, setAlarmDel] = useState("5");
-  const [relayDel, setRelayDel] = useState("2");
 
   const handleSave = async () => {
-    setSaving(true);
     try {
       await ApiService.saveSettings({
         tempThreshold: parseFloat(tempThresh),
         currentLimit: parseFloat(currLimit),
-        alarmDelay: parseFloat(alarmDel),
-        relayTripDelay: parseFloat(relayDel),
+        alarmDelay: 5,
+        relayTripDelay: 2,
       });
-      toast.success("EEPROM Parameters Updated", {
-        description: "Safety rules written to ESP32 Flash memory.",
+      toast.success("EEPROM Parameters Saved", {
+        description: "Written safety threshold rules to ESP32 Flash memory.",
       });
-    } catch (err) {
-      toast.error("EEPROM Write Failed", {
-        description: "Could not write parameters to ESP32 node.",
-      });
-    } finally {
-      setSaving(false);
+    } catch {
+      toast.error("Save Failed", { description: "Could not write to ESP32 EEPROM." });
     }
   };
 
   return (
-    <>
-      <PageHead
-        title="Protection Thresholds & EEPROM Config"
-        description="Hardware interlock parameters written to ESP32 Flash memory"
-      />
-
-      <Panel className="max-w-2xl">
-        <h3 className="text-base font-bold text-[#e2e2e9]">Hardware Trip Thresholds</h3>
-        <p className="mt-0.5 text-xs text-[#c3c6d7]">
-          Threshold settings are written directly to ESP32 non-volatile EEPROM storage.
-        </p>
-
-        <div className="mt-6 grid gap-5 sm:grid-cols-2">
-          <label className="block">
-            <span className="text-xs font-medium text-[#c3c6d7]">Hotspot Trip Temperature</span>
-            <div className="mt-1.5 flex rounded border border-[#434655] bg-[#111318] px-3 py-2">
-              <input
-                value={tempThresh}
-                onChange={(e) => setTempThresh(e.target.value)}
-                className="w-full bg-transparent font-mono text-sm font-bold text-[#e2e2e9] outline-none"
-              />
-              <span className="font-mono text-xs font-medium text-[#8d90a0]">°C</span>
-            </div>
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-medium text-[#c3c6d7]">Overcurrent Limit (ACS712)</span>
-            <div className="mt-1.5 flex rounded border border-[#434655] bg-[#111318] px-3 py-2">
-              <input
-                value={currLimit}
-                onChange={(e) => setCurrLimit(e.target.value)}
-                className="w-full bg-transparent font-mono text-sm font-bold text-[#e2e2e9] outline-none"
-              />
-              <span className="font-mono text-xs font-medium text-[#8d90a0]">A</span>
-            </div>
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-medium text-[#c3c6d7]">Buzzer Alarm Delay</span>
-            <div className="mt-1.5 flex rounded border border-[#434655] bg-[#111318] px-3 py-2">
-              <input
-                value={alarmDel}
-                onChange={(e) => setAlarmDel(e.target.value)}
-                className="w-full bg-transparent font-mono text-sm font-bold text-[#e2e2e9] outline-none"
-              />
-              <span className="font-mono text-xs font-medium text-[#8d90a0]">sec</span>
-            </div>
-          </label>
-
-          <label className="block">
-            <span className="text-xs font-medium text-[#c3c6d7]">Relay Disconnect Delay</span>
-            <div className="mt-1.5 flex rounded border border-[#434655] bg-[#111318] px-3 py-2">
-              <input
-                value={relayDel}
-                onChange={(e) => setRelayDel(e.target.value)}
-                className="w-full bg-transparent font-mono text-sm font-bold text-[#e2e2e9] outline-none"
-              />
-              <span className="font-mono text-xs font-medium text-[#8d90a0]">sec</span>
-            </div>
-          </label>
-        </div>
-
+    <div className="bg-[#111318] border border-[#434655] p-6 max-w-xl rounded">
+      <h3 className="font-[Inter] text-[18px] font-bold text-[#e2e2e9]">Hardware Trip Thresholds</h3>
+      <div className="mt-4 space-y-4 font-[Inter] text-[14px]">
+        <label className="block">
+          <span className="text-[#c3c6d7] text-[12px]">Hotspot Trip Temp (°C)</span>
+          <input
+            value={tempThresh}
+            onChange={(e) => setTempThresh(e.target.value)}
+            className="w-full mt-1 bg-[#1a1b21] border border-[#434655] p-2 text-[#e2e2e9] font-['JetBrains_Mono'] rounded"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[#c3c6d7] text-[12px]">Overcurrent Limit (A)</span>
+          <input
+            value={currLimit}
+            onChange={(e) => setCurrLimit(e.target.value)}
+            className="w-full mt-1 bg-[#1a1b21] border border-[#434655] p-2 text-[#e2e2e9] font-['JetBrains_Mono'] rounded"
+          />
+        </label>
         <button
           onClick={handleSave}
-          disabled={saving}
-          className="mt-6 rounded bg-[#2563eb] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2563eb]/80 transition-colors disabled:opacity-50"
+          className="px-4 py-2 bg-[#2563eb] text-[#eeefff] font-bold text-[12px] rounded hover:brightness-110 transition-all"
         >
-          {saving ? "Writing to EEPROM..." : "Write to ESP32 Flash"}
+          Save to ESP32 EEPROM
         </button>
-      </Panel>
-    </>
+      </div>
+    </div>
   );
 }
 
+/* =========================================================================
+   8. ABOUT VIEW (about_thermalguard/code.html)
+   ========================================================================= */
 function About() {
   return (
-    <>
-      <PageHead
-        title="ThermalGuard System Specification"
-        description="Architecture details for MLX90640 + ACS712 edge monitoring"
-      />
-
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
-        <Panel>
-          <h3 className="text-24px font-bold text-[#e2e2e9]">
-            Electrical Thermal Degradation Monitoring
-          </h3>
-          <p className="mt-2 text-sm leading-relaxed text-[#c3c6d7]">
-            ThermalGuard integrates 32×24 spatial thermal imaging (MLX90640), ambient environmental sensing (DHT11), and high-frequency current monitoring (ACS712) into a unified ESP32 edge node to isolate micro-hotspots prior to electrical insulation breakdown.
-          </p>
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {[
-              ["IR Sensor Array", "MLX90640 (I2C 0x33)"],
-              ["Edge Processor", "ESP32 DevKit V1 (240MHz)"],
-              ["Current Sensor", "ACS712 (185mV/A)"],
-            ].map(([a, b]) => (
-              <div className="rounded border border-[#434655] bg-[#111318] p-3.5" key={a}>
-                <p className="font-mono text-xs font-bold text-[#2563eb]">{a}</p>
-                <p className="mt-1 text-xs text-[#c3c6d7] font-medium">{b}</p>
-              </div>
-            ))}
-          </div>
-        </Panel>
-
-        <Panel>
-          <p className="font-mono text-xs font-semibold uppercase tracking-wider text-[#8d90a0]">
-            Firmware Build
-          </p>
-          <p className="mt-2 font-mono text-32px font-bold text-[#e2e2e9]">v2.4.1</p>
-          <p className="mt-1 text-xs text-[#c3c6d7] font-mono">PlatformIO Core 6.1.11</p>
-          <Link
-            to="/devices"
-            className="mt-6 inline-flex items-center gap-1 text-xs font-semibold text-[#2563eb] hover:underline"
-          >
-            Hardware Inventory <ChevronRight size={14} />
-          </Link>
-        </Panel>
-      </div>
-    </>
+    <div className="bg-[#111318] border border-[#434655] p-6 rounded max-w-3xl">
+      <h3 className="font-[Inter] text-[24px] font-bold text-[#e2e2e9]">ThermalGuard System Specification</h3>
+      <p className="mt-2 text-[14px] text-[#c3c6d7] leading-relaxed">
+        ThermalGuard integrates 32×24 spatial thermal imaging (MLX90640), ambient environmental sensing (DHT11), and high-frequency current monitoring (ACS712) into a unified ESP32 edge node to isolate micro-hotspots prior to electrical insulation breakdown.
+      </p>
+    </div>
   );
 }
 
+/* =========================================================================
+   9. NOT FOUND 404 VIEW
+   ========================================================================= */
 function NotFound() {
   return (
-    <div className="grid min-h-[60vh] place-items-center p-6">
-      <div className="max-w-md rounded border border-[#434655] bg-[#1e1f25] p-8 text-center shadow-sm">
-        <div className="mx-auto grid h-12 w-12 place-items-center rounded border border-[#D97706]/30 bg-[#D97706]/10 text-[#D97706]">
-          <ShieldAlert size={24} />
-        </div>
-        <p className="mt-4 font-mono text-32px font-bold text-[#e2e2e9]">
-          404
-        </p>
-        <h2 className="mt-1 text-base font-bold text-[#e2e2e9]">Unknown Route Path</h2>
-        <p className="mt-2 text-xs text-[#c3c6d7]">
-          The requested path does not map to any active telemetry channel or hardware configuration view.
-        </p>
-
-        <div className="mt-6 flex flex-col gap-2">
-          <Link
-            to="/"
-            className="flex items-center justify-center gap-2 rounded bg-[#2563eb] py-2 text-xs font-semibold text-white hover:bg-[#2563eb]/80 transition-colors"
-          >
-            <Home size={16} /> Operations Dashboard
-          </Link>
-          <Link
-            to="/thermal-monitor"
-            className="rounded border border-[#434655] bg-[#111318] py-2 text-xs font-semibold text-[#c3c6d7] hover:text-[#e2e2e9] transition-colors"
-          >
-            MLX90640 Thermal Grid →
-          </Link>
-        </div>
-      </div>
+    <div className="p-8 text-center bg-[#111318] border border-[#434655] rounded max-w-md mx-auto">
+      <h2 className="text-[32px] font-bold font-['JetBrains_Mono'] text-[#ffb4ab]">404</h2>
+      <p className="text-[#c3c6d7] mt-2">Route not found</p>
+      <Link to="/" className="mt-4 inline-block px-4 py-2 bg-[#2563eb] text-white rounded font-bold text-xs">
+        Return to Dashboard
+      </Link>
     </div>
   );
 }

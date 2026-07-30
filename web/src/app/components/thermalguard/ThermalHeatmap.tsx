@@ -1,105 +1,92 @@
 import React, { useState } from "react";
-import { Flame, WifiOff } from "lucide-react";
 import { useTelemetry } from "../../context/TelemetryContext";
 
 export function ThermalHeatmap() {
   const { thermalFrame, sensorStatus } = useTelemetry();
-  const [selectedPalette, setSelectedPalette] = useState<"ironbow" | "rainbow" | "fire">("ironbow");
+  const [palette, setPalette] = useState<"ironbow" | "rainbow" | "fire">("ironbow");
   const isDisconnected = !sensorStatus.mlx90640Connected;
 
   return (
-    <div className="rounded-lg border border-[#2A3140] bg-[#151922] p-6 shadow-sm">
+    <div className="bg-[#111318] border border-[#434655] p-6 rounded-xl relative overflow-hidden">
       {/* Header Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#2A3140] pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="text-[#D97706]">
-            <Flame size={18} />
-          </div>
-          <div>
-            <h3 className="text-base font-bold text-[#F8FAFC]">MLX90640 Thermal Grid (32×24)</h3>
-            <p className="font-mono text-xs text-[#94A3B8]">I2C Bus 0x33 · 768 Sub-Pixels</p>
-          </div>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div>
+          <h3 className="font-[Inter] text-[18px] leading-[24px] font-medium text-[#e2e2e9]">
+            MLX90640 Sensor Array
+          </h3>
+          <p className="font-[Inter] text-[13px] leading-[18px] text-[#c3c6d7]">
+            768-pixel Spatial IR Matrix · Focal Plane: 1.2m
+          </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1.5 text-xs font-semibold">
-            {isDisconnected ? (
-              <>
-                <span className="h-2 w-2 rounded-full bg-[#DC2626]" />
-                <span className="text-[#DC2626]">Disconnected</span>
-              </>
-            ) : (
-              <>
-                <span className="h-2 w-2 rounded-full bg-[#16A34A]" />
-                <span className="text-[#16A34A]">Active Feed</span>
-              </>
-            )}
-          </span>
+        <div className="flex items-center gap-4">
+          <span className="font-['JetBrains_Mono'] text-[12px] text-[#b4c5ff]">FPS: 8.0</span>
+          <span className="font-['JetBrains_Mono'] text-[12px] text-[#c3c6d7]">0x33 ADDR</span>
 
-          <div className="flex rounded border border-[#2A3140] bg-[#0B0D12] p-0.5 font-mono text-xs">
-            {(["ironbow", "rainbow", "fire"] as const).map((palette) => (
+          {/* Palette Selector */}
+          <div className="flex items-center gap-1 bg-[#1a1b21] p-1 rounded border border-[#434655]">
+            {(["ironbow", "rainbow", "fire"] as const).map((p) => (
               <button
-                key={palette}
-                onClick={() => setSelectedPalette(palette)}
-                className={`rounded px-2.5 py-0.5 font-semibold transition-colors ${
-                  selectedPalette === palette
-                    ? "bg-[#2563EB] text-[#F8FAFC]"
-                    : "text-[#94A3B8] hover:text-[#F8FAFC]"
+                key={p}
+                onClick={() => setPalette(p)}
+                className={`px-2 py-0.5 font-[Inter] text-[11px] uppercase tracking-wider font-bold rounded transition-colors ${
+                  palette === p
+                    ? "bg-[#2563eb] text-[#eeefff]"
+                    : "text-[#c3c6d7] hover:text-[#e2e2e9]"
                 }`}
               >
-                {palette}
+                {p}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Heatmap Canvas */}
-      <div className="relative mt-6 aspect-[4/3] w-full overflow-hidden rounded border border-[#2A3140] bg-[#0B0D12]">
+      {/* Heatmap Canvas Area */}
+      <div className="relative bg-[#0c0e13] border border-[#434655] aspect-[4/3] w-full overflow-hidden rounded-lg">
         {isDisconnected ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-            <div className="grid h-12 w-12 place-items-center rounded border border-[#DC2626]/40 bg-[#DC2626]/10 text-[#DC2626]">
-              <WifiOff size={24} />
-            </div>
-            <h4 className="mt-3 font-mono text-sm font-bold text-[#DC2626]">
+            <span className="material-symbols-outlined text-[48px] text-[#ffb4ab]">wifi_off</span>
+            <h4 className="mt-3 font-['JetBrains_Mono'] text-[14px] font-bold text-[#ffb4ab]">
               MLX90640 Disconnected
             </h4>
-            <p className="mt-1 text-xs text-[#94A3B8] max-w-sm">
-              Waiting for thermal camera array on I2C bus 0x33. Verify connections on GPIO 21 (SDA) and GPIO 22 (SCL).
+            <p className="mt-1 text-[13px] text-[#c3c6d7] max-w-sm">
+              Waiting for device on I2C bus 0x33... Check SDA/SCL connections on GPIO 21 &amp; 22.
             </p>
           </div>
         ) : (
           <>
-            {/* Thermal Grid Matrix */}
-            <div className="grid h-full w-full grid-cols-8 grid-rows-6 gap-0.5 p-1 bg-[#0B0D12]">
-              {Array.from({ length: 48 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="rounded-sm transition-colors duration-300"
-                  style={{
-                    backgroundColor:
-                      i === 22
-                        ? "#DC2626"
-                        : i === 21 || i === 23 || i === 30
-                        ? "#D97706"
-                        : i > 15 && i < 35
-                        ? "#2563EB"
-                        : "#151922",
-                    opacity: 0.9,
-                  }}
-                />
-              ))}
+            {/* 32x24 Pixel Array Simulation */}
+            <div className="grid h-full w-full grid-cols-8 grid-rows-6 gap-0.5 p-1">
+              {Array.from({ length: 48 }).map((_, i) => {
+                let color = "#1e1f25";
+                if (palette === "ironbow") {
+                  color = i === 22 ? "#f1e529" : i === 21 || i === 23 || i === 30 ? "#d03e1b" : i > 15 && i < 35 ? "#41107b" : "#000000";
+                } else if (palette === "rainbow") {
+                  color = i === 22 ? "#ff0000" : i === 21 || i === 23 || i === 30 ? "#ffff00" : i > 15 && i < 35 ? "#00ff00" : "#0000ff";
+                } else {
+                  color = i === 22 ? "#ffffff" : i === 21 || i === 23 || i === 30 ? "#ffff00" : i > 15 && i < 35 ? "#ff8000" : "#800000";
+                }
+
+                return (
+                  <div
+                    key={i}
+                    className="rounded-sm transition-colors duration-300"
+                    style={{ backgroundColor: color }}
+                  />
+                );
+              })}
             </div>
 
             {/* Target Reticle Crosshair */}
-            <div className="absolute left-[54%] top-[42%] grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[#DC2626]">
-              <div className="h-1.5 w-1.5 rounded-full bg-[#DC2626]" />
+            <div className="absolute left-[54%] top-[42%] grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[#ff3d00]">
+              <div className="h-1.5 w-1.5 rounded-full bg-[#ff3d00]" />
             </div>
 
-            {/* Target Position HUD */}
-            <div className="absolute left-3 top-3 rounded border border-[#2A3140] bg-[#0B0D12]/90 px-3 py-1.5 font-mono text-xs text-[#F8FAFC]">
-              <span className="text-[#94A3B8]">HOTSPOT:</span>{" "}
-              <b className="text-[#DC2626] font-bold">{thermalFrame.maxTemp}°C</b> (X: {thermalFrame.hotspotX}, Y: {thermalFrame.hotspotY})
+            {/* Target Telemetry HUD Overlay */}
+            <div className="absolute left-3 top-3 rounded border border-[#434655] bg-[#0c0e13]/90 px-3 py-1.5 font-['JetBrains_Mono'] text-[12px] text-[#e2e2e9]">
+              <span className="text-[#c3c6d7]">HOTSPOT:</span>{" "}
+              <b className="text-[#ffb4ab] font-bold">{thermalFrame.maxTemp}°C</b> (X: {thermalFrame.hotspotX}, Y: {thermalFrame.hotspotY})
             </div>
           </>
         )}

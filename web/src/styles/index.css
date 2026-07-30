@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #111318;
-  --surface: #111318;
-  --outline-variant: #434655;
+  --bg-main: #0B0D12;
+  --bg-surface: #151922;
+  --border-color: #2A3140;
 }
 
 html, body {
   height: 100%;
   margin: 0;
-  background-color: #111318;
-  color: #e2e2e9;
+  background-color: #0B0D12;
+  color: #F8FAFC;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   scroll-behavior: smooth;
   text-rendering: optimizeLegibility;
@@ -19,45 +19,21 @@ html, body {
 
 #root {
   min-height: 100%;
-  background-color: #111318;
+  background-color: #0B0D12;
 }
 
-/* Thermal 32x24 Grid Overlay */
-.thermal-grid {
-  display: grid;
-  grid-template-columns: repeat(32, 1fr);
-  grid-template-rows: repeat(24, 1fr);
-  gap: 1px;
-  background: #282a2f;
+/* Minimal subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
 }
-
-.thermal-pixel {
-  aspect-ratio: 1;
-  transition: background-color 0.2s ease;
+::-webkit-scrollbar-track {
+  background: #0B0D12;
 }
-
-.reticle {
-  position: absolute;
-  pointer-events: none;
-  width: 40px;
-  height: 40px;
-  border: 1px solid #FF3D00;
-  transform: translate(-50%, -50%);
+::-webkit-scrollbar-thumb {
+  background: #2A3140;
+  border-radius: 3px;
 }
-.reticle::before, .reticle::after {
-  content: '';
-  position: absolute;
-  background: #FF3D00;
+::-webkit-scrollbar-thumb:hover {
+  background: #64748B;
 }
-.reticle::before { top: 50%; left: -10px; width: 60px; height: 1px; }
-.reticle::after { left: 50%; top: -10px; width: 1px; height: 60px; }
-
-.palette-ironbow { background: linear-gradient(to right, #000, #41107b, #d03e1b, #f1e529); }
-.palette-rainbow { background: linear-gradient(to right, #0000ff, #00ffff, #00ff00, #ffff00, #ff0000); }
-.palette-fire { background: linear-gradient(to right, #000, #800000, #ff8000, #ffff00, #ffffff); }
-
-/* Minimal Scrollbars */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: #111318; }
-::-webkit-scrollbar-thumb { background: #33353a; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #434655; }

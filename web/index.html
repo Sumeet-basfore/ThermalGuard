@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-    <title>ThermalGuard | Industrial Thermal Intelligence & Fire Prevention</title>
+    <title>ThermalGuard Operations Console</title>
     
     <!-- Primary Meta Tags -->
-    <meta name="title" content="ThermalGuard | Industrial Thermal Intelligence" />
-    <meta name="description" content="Real-time AI-powered thermal intelligence, infrared heat mapping, and electrical fire prevention system monitoring critical industrial infrastructure." />
-    <meta name="theme-color" content="#070b14" />
+    <meta name="title" content="ThermalGuard Operations Console" />
+    <meta name="description" content="Industrial thermal intelligence and fire prevention system monitoring critical electrical infrastructure." />
+    <meta name="theme-color" content="#111318" />
     <meta name="author" content="ThermalGuard Systems" />
     
     <!-- Favicon -->
@@ -18,31 +18,37 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://thermalguard.io/" />
-    <meta property="og:title" content="ThermalGuard | Industrial Thermal Intelligence" />
-    <meta property="og:description" content="AI-powered thermal intelligence and fire prevention system monitoring critical electrical infrastructure." />
+    <meta property="og:title" content="ThermalGuard Operations Console" />
+    <meta property="og:description" content="Industrial thermal intelligence and fire prevention system monitoring critical electrical infrastructure." />
     <meta property="og:image" content="/og-image.png" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://thermalguard.io/" />
-    <meta property="twitter:title" content="ThermalGuard | Industrial Thermal Intelligence" />
-    <meta property="twitter:description" content="AI-powered thermal intelligence and fire prevention system monitoring critical electrical infrastructure." />
+    <meta property="twitter:title" content="ThermalGuard Operations Console" />
+    <meta property="twitter:description" content="Industrial thermal intelligence and fire prevention system monitoring critical electrical infrastructure." />
     <meta property="twitter:image" content="/og-image.png" />
 
     <!-- Preconnect Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
 
     <style>
       html, body {
         height: 100%;
         margin: 0;
-        background-color: #070b14;
-        color: #f8fafc;
+        background-color: #111318;
+        color: #e2e2e9;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
         scroll-behavior: smooth;
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
+      }
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        vertical-align: middle;
       }
       #root {
         height: 100%;
@@ -50,7 +56,7 @@
     </style>
   </head>
 
-  <body>
+  <body class="dark bg-[#111318] text-[#e2e2e9]">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
