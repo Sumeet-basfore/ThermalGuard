@@ -1,11 +1,23 @@
+# ThermalGuard — Web Operations Console
 
-  # Process Attached File
+This directory contains the React 19 + Vite web operations console for ThermalGuard.
 
-  This is a code bundle for Process Attached File. The original project is available at https://www.figma.com/design/f1WAaNnDyhY6s9RzjSchNj/Process-Attached-File.
+---
 
-  ## Running the code
+## 🚀 Quick Start
 
-  Run `npm i` to install the dependencies.
+```bash
+# Install dependencies
+npm install
 
-  Run `npm run dev` to start the development server.
-  
+# Run local development server
+npm run dev
+
+# Build production bundle
+npm run build
+```
+
+---
+
+## 📺 Projector Presentation Mode
+Press **`F`** or click **Presentation Mode** in the header to enter projector mode with 5xl metric cards and high-contrast trend curves. Press **`Esc`** to return to the console.
