@@ -17,9 +17,11 @@ export function PresentationView({ onExit }: PresentationViewProps) {
       {/* Presentation Bar */}
       <header className="mx-auto flex max-w-[1600px] items-center justify-between border-b border-[#2A3140] pb-6">
         <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded bg-[#2563EB] text-white">
-            <Shield size={20} />
-          </div>
+          <img
+            src="/Logo.jpeg"
+            alt="ThermalGuard Logo"
+            className="w-10 h-10 rounded-lg object-cover border border-[#434655]"
+          />
           <div>
             <h1 className="text-22px font-bold text-[#F8FAFC]">
               ThermalGuard — Executive Presentation Mode

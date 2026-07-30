@@ -34,11 +34,11 @@ export function SidebarNav({
         <div className="p-6 flex flex-col gap-1">
           {/* Brand Logo & Title */}
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-8 h-8 bg-[#2563eb] flex items-center justify-center rounded-lg shadow-sm">
-              <span className="material-symbols-outlined text-[#eeefff]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                thermostat
-              </span>
-            </div>
+            <img
+              src="/Logo.jpeg"
+              alt="ThermalGuard Logo"
+              className="w-8 h-8 rounded-lg object-cover border border-[#434655]"
+            />
             <div>
               <h1 className="font-[Inter] text-[24px] leading-[32px] font-bold text-[#e2e2e9]">ThermalGuard</h1>
               <p className="font-[Inter] text-[11px] leading-[16px] tracking-[0.05em] font-bold text-[#c3c6d7] opacity-60">v2.4</p>
@@ -54,7 +54,7 @@ export function SidebarNav({
                   key={path}
                   to={path}
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2 transition-all ${
+                  className={`flex items-center gap-3 px-3 py-2 transition-all rounded ${
                     isActive
                       ? "text-[#e2e2e9] font-semibold border-l-2 border-[#2563eb] bg-[#282a2f]"
                       : "text-[#c3c6d7] hover:bg-[#282a2f] hover:text-[#e2e2e9]"
@@ -92,7 +92,7 @@ export function SidebarNav({
                   key={path}
                   to={path}
                   onClick={() => setOpen(false)}
-                  className={`flex items-center gap-3 px-3 py-2 transition-colors ${
+                  className={`flex items-center gap-3 px-3 py-2 transition-colors rounded ${
                     isActive
                       ? "text-[#b4c5ff] font-semibold bg-[#282a2f]"
                       : "text-[#c3c6d7] hover:text-[#b4c5ff]"
