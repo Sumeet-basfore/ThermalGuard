@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { Flame, Maximize2, Move, RefreshCw, WifiOff } from "lucide-react";
-import { motion } from "motion/react";
+import { Flame, WifiOff } from "lucide-react";
 import { useTelemetry } from "../../context/TelemetryContext";
 
 export function ThermalHeatmap() {
@@ -9,39 +8,43 @@ export function ThermalHeatmap() {
   const isDisconnected = !sensorStatus.mlx90640Connected;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#0c1322] p-6 backdrop-blur-xl shadow-2xl">
+    <div className="rounded-lg border border-[#2A3140] bg-[#151922] p-6 shadow-sm">
       {/* Header Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
-        <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400 shadow-md">
-            <Flame size={20} />
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#2A3140] pb-4">
+        <div className="flex items-center gap-2.5">
+          <div className="text-[#D97706]">
+            <Flame size={18} />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">MLX90640 Thermal Grid (32×24)</h3>
-            <p className="text-xs text-slate-400 font-mono">I2C Bus 0x33 · 768 Sub-Pixels</p>
+            <h3 className="text-base font-bold text-[#F8FAFC]">MLX90640 Thermal Grid (32×24)</h3>
+            <p className="font-mono text-xs text-[#94A3B8]">I2C Bus 0x33 · 768 Sub-Pixels</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <span
-            className={`rounded-full border px-3 py-1 text-[10px] font-bold tracking-wide transition ${
-              isDisconnected
-                ? "bg-rose-500/20 text-rose-300 border-rose-500/30 shadow-[0_0_10px_#f43f5e] animate-pulse"
-                : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-            }`}
-          >
-            ● {isDisconnected ? "Disconnected" : "Active Feed"}
+          <span className="flex items-center gap-1.5 text-xs font-semibold">
+            {isDisconnected ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-[#DC2626]" />
+                <span className="text-[#DC2626]">Disconnected</span>
+              </>
+            ) : (
+              <>
+                <span className="h-2 w-2 rounded-full bg-[#16A34A]" />
+                <span className="text-[#16A34A]">Active Feed</span>
+              </>
+            )}
           </span>
 
-          <div className="flex rounded-lg border border-white/10 bg-white/[0.04] p-0.5">
+          <div className="flex rounded border border-[#2A3140] bg-[#0B0D12] p-0.5 font-mono text-xs">
             {(["ironbow", "rainbow", "fire"] as const).map((palette) => (
               <button
                 key={palette}
                 onClick={() => setSelectedPalette(palette)}
-                className={`rounded-md px-2.5 py-1 text-[10px] font-bold uppercase transition ${
+                className={`rounded px-2.5 py-0.5 font-semibold transition-colors ${
                   selectedPalette === palette
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-[#2563EB] text-[#F8FAFC]"
+                    : "text-[#94A3B8] hover:text-[#F8FAFC]"
                 }`}
               >
                 {palette}
@@ -51,56 +54,52 @@ export function ThermalHeatmap() {
         </div>
       </div>
 
-      {/* Heatmap Canvas Screen */}
-      <div className="relative mt-6 aspect-[4/3] w-full overflow-hidden rounded-xl border border-white/10 bg-[#050810] shadow-inner">
+      {/* Heatmap Canvas */}
+      <div className="relative mt-6 aspect-[4/3] w-full overflow-hidden rounded border border-[#2A3140] bg-[#0B0D12]">
         {isDisconnected ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-            <div className="grid h-16 w-16 place-items-center rounded-2xl border border-rose-500/30 bg-rose-500/10 text-rose-400 shadow-xl animate-pulse">
-              <WifiOff size={32} />
+            <div className="grid h-12 w-12 place-items-center rounded border border-[#DC2626]/40 bg-[#DC2626]/10 text-[#DC2626]">
+              <WifiOff size={24} />
             </div>
-            <h4 className="mt-4 font-mono text-lg font-bold text-rose-400">
+            <h4 className="mt-3 font-mono text-sm font-bold text-[#DC2626]">
               MLX90640 Disconnected
             </h4>
-            <p className="mt-1 text-xs text-slate-400 max-w-sm">
-              Waiting for thermal camera array on I2C bus 0x33... Check physical wiring on GPIO 21 (SDA) &amp; GPIO 22 (SCL).
+            <p className="mt-1 text-xs text-[#94A3B8] max-w-sm">
+              Waiting for thermal camera array on I2C bus 0x33. Verify connections on GPIO 21 (SDA) and GPIO 22 (SCL).
             </p>
           </div>
         ) : (
           <>
-            {/* Thermal Grid Canvas Representation */}
-            <div className="grid h-full w-full grid-cols-8 grid-rows-6 gap-0.5 p-1 bg-gradient-to-br from-blue-950 via-indigo-950 to-slate-950">
+            {/* Thermal Grid Matrix */}
+            <div className="grid h-full w-full grid-cols-8 grid-rows-6 gap-0.5 p-1 bg-[#0B0D12]">
               {Array.from({ length: 48 }).map((_, i) => (
                 <div
                   key={i}
-                  className="relative rounded-sm transition-all duration-700"
+                  className="rounded-sm transition-colors duration-300"
                   style={{
                     backgroundColor:
                       i === 22
-                        ? "#f43f5e"
+                        ? "#DC2626"
                         : i === 21 || i === 23 || i === 30
-                        ? "#f59e0b"
+                        ? "#D97706"
                         : i > 15 && i < 35
-                        ? "#3b82f6"
-                        : "#0f172a",
-                    opacity: 0.85 + (i % 3) * 0.05,
+                        ? "#2563EB"
+                        : "#151922",
+                    opacity: 0.9,
                   }}
                 />
               ))}
             </div>
 
             {/* Target Reticle Crosshair */}
-            <motion.div
-              animate={{ scale: [1, 1.1, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="absolute left-[54%] top-[42%] grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-rose-500/80 shadow-[0_0_15px_#f43f5e]"
-            >
-              <div className="h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]" />
-            </motion.div>
+            <div className="absolute left-[54%] top-[42%] grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[#DC2626]">
+              <div className="h-1.5 w-1.5 rounded-full bg-[#DC2626]" />
+            </div>
 
             {/* Target Position HUD */}
-            <div className="absolute left-4 top-4 rounded-xl border border-white/20 bg-black/60 px-3.5 py-2 text-xs font-mono text-white backdrop-blur-md">
-              <span className="text-slate-400">HOTSPOT:</span>{" "}
-              <b className="text-rose-400 font-bold">{thermalFrame.maxTemp}°C</b> (X: {thermalFrame.hotspotX}, Y: {thermalFrame.hotspotY})
+            <div className="absolute left-3 top-3 rounded border border-[#2A3140] bg-[#0B0D12]/90 px-3 py-1.5 font-mono text-xs text-[#F8FAFC]">
+              <span className="text-[#94A3B8]">HOTSPOT:</span>{" "}
+              <b className="text-[#DC2626] font-bold">{thermalFrame.maxTemp}°C</b> (X: {thermalFrame.hotspotX}, Y: {thermalFrame.hotspotY})
             </div>
           </>
         )}

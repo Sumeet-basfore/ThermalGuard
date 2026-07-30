@@ -1,4 +1,39 @@
-@import './fonts.css';
-@import './tailwind.css';
-@import './theme.css';
-@import './design-system.css';
+@import "tailwindcss";
+
+:root {
+  --bg-main: #0B0D12;
+  --bg-surface: #151922;
+  --border-color: #2A3140;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background-color: #0B0D12;
+  color: #F8FAFC;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  scroll-behavior: smooth;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100%;
+  background-color: #0B0D12;
+}
+
+/* Minimal subtle scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0B0D12;
+}
+::-webkit-scrollbar-thumb {
+  background: #2A3140;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748B;
+}

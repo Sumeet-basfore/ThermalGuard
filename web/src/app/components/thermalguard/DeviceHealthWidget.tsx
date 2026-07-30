@@ -1,28 +1,50 @@
 import React from "react";
-import { ProgressRing } from "./ProgressRing";
+import { Cpu } from "lucide-react";
+import { useTelemetry } from "../../context/TelemetryContext";
 
 export function DeviceHealthWidget() {
-  const metrics = [
-    { label: "ESP32 CPU Load", val: 32, color: "#60a5fa" },
-    { label: "RAM Memory", val: 48, color: "#a78bfa" },
-    { label: "WiFi Signal", val: 88, color: "#34d399" },
-    { label: "Storage Flash", val: 22, color: "#fbbf24" },
-  ];
+  const { systemHealth } = useTelemetry();
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0f172a]/75 p-6 backdrop-blur-xl shadow-xl shadow-black/30">
-      <h3 className="text-base font-bold text-white">System Health</h3>
-      <p className="mt-0.5 text-xs text-slate-400">Microcontroller & Radio status</p>
-      <div className="mt-5 space-y-4">
-        {metrics.map((m) => (
-          <ProgressRing
-            key={m.label}
-            label={m.label}
-            value={m.val}
-            color={m.color}
-            size={48}
-          />
-        ))}
+    <div className="rounded-lg border border-[#2A3140] bg-[#151922] p-5 shadow-sm">
+      <div className="flex items-center justify-between border-b border-[#2A3140] pb-3">
+        <div className="flex items-center gap-2">
+          <Cpu size={18} className="text-[#2563EB]" />
+          <h3 className="text-sm font-bold text-[#F8FAFC]">ESP32 Node Diagnostics</h3>
+        </div>
+        <span className="font-mono text-xs text-[#16A34A] font-semibold">● Healthy</span>
+      </div>
+
+      <div className="mt-4 space-y-3 font-mono text-xs">
+        <div>
+          <div className="flex justify-between text-[#94A3B8]">
+            <span>CPU Load</span>
+            <span className="text-[#F8FAFC] font-semibold">{systemHealth.cpuLoad}%</span>
+          </div>
+          <div className="mt-1 h-1.5 w-full rounded bg-[#0B0D12]">
+            <div className="h-full rounded bg-[#2563EB]" style={{ width: `${systemHealth.cpuLoad}%` }} />
+          </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between text-[#94A3B8]">
+            <span>RAM Usage</span>
+            <span className="text-[#F8FAFC] font-semibold">{systemHealth.memoryUsage}%</span>
+          </div>
+          <div className="mt-1 h-1.5 w-full rounded bg-[#0B0D12]">
+            <div className="h-full rounded bg-[#16A34A]" style={{ width: `${systemHealth.memoryUsage}%` }} />
+          </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between text-[#94A3B8]">
+            <span>WiFi Signal (RSSI)</span>
+            <span className="text-[#16A34A] font-semibold">{systemHealth.wifiSignal}%</span>
+          </div>
+          <div className="mt-1 h-1.5 w-full rounded bg-[#0B0D12]">
+            <div className="h-full rounded bg-[#16A34A]" style={{ width: `${systemHealth.wifiSignal}%` }} />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -7,47 +7,51 @@ export function EnvironmentalCard() {
   const { sensorMetrics, sensorStatus } = useTelemetry();
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0f172a]/75 p-6 backdrop-blur-xl shadow-xl shadow-black/30">
+    <div className="rounded-lg border border-[#2A3140] bg-[#151922] p-5 shadow-sm">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 shadow-md">
-            <Thermometer size={22} />
+        <div className="flex items-center gap-2.5">
+          <div className="text-[#06b6d4]">
+            <Thermometer size={18} />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">DHT11 Environmental Sensor</h3>
-            <p className="text-xs text-slate-400 font-mono">ESP32 GPIO 4 · Ambient & Humidity</p>
+            <h3 className="text-sm font-bold text-[#F8FAFC]">DHT11 Environmental Sensor</h3>
+            <p className="font-mono text-xs text-[#64748B]">GPIO 4 · Ambient Temp &amp; Relative Humidity</p>
           </div>
         </div>
 
-        <span
-          className={`rounded-full border px-3 py-1 text-[10px] font-bold ${
-            sensorStatus.dht11Connected
-              ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-              : "bg-rose-500/20 text-rose-300 border-rose-500/30"
-          }`}
-        >
-          ● {sensorStatus.dht11Connected ? "DHT11 CONNECTED" : "DISCONNECTED"}
+        <span className="flex items-center gap-1.5 text-xs font-semibold">
+          {sensorStatus.dht11Connected ? (
+            <>
+              <span className="h-2 w-2 rounded-full bg-[#16A34A]" />
+              <span className="text-[#16A34A]">Connected</span>
+            </>
+          ) : (
+            <>
+              <span className="h-2 w-2 rounded-full bg-[#DC2626]" />
+              <span className="text-[#DC2626]">Disconnected</span>
+            </>
+          )}
         </span>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-[#0a0f1d] p-4">
-          <p className="text-xs font-semibold text-slate-400">Ambient Temperature</p>
-          <div className="mt-2 font-mono text-3xl font-extrabold text-white">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="rounded border border-[#2A3140] bg-[#0B0D12] p-4">
+          <p className="text-xs font-medium text-[#94A3B8]">Ambient Temperature</p>
+          <div className="mt-1 font-mono text-22px font-bold text-[#F8FAFC]">
             <AnimatedNumber value={sensorMetrics.ambientTemp} decimals={1} /> °C
           </div>
-          <p className="mt-1 text-[10px] text-emerald-400 font-medium">● Operating within normal range</p>
+          <p className="mt-1 font-mono text-[11px] text-[#16A34A]">● Operating within nominal range</p>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-[#0a0f1d] p-4">
+        <div className="rounded border border-[#2A3140] bg-[#0B0D12] p-4">
           <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-400">Relative Humidity</p>
-            <Droplets size={16} className="text-cyan-400" />
+            <p className="text-xs font-medium text-[#94A3B8]">Relative Humidity</p>
+            <Droplets size={16} className="text-[#06b6d4]" />
           </div>
-          <div className="mt-2 font-mono text-3xl font-extrabold text-white">
+          <div className="mt-1 font-mono text-22px font-bold text-[#F8FAFC]">
             <AnimatedNumber value={sensorMetrics.humidity} decimals={0} /> % RH
           </div>
-          <p className="mt-1 text-[10px] text-cyan-400 font-medium">● Optimal environmental moisture</p>
+          <p className="mt-1 font-mono text-[11px] text-[#06b6d4]">● Environmental moisture nominal</p>
         </div>
       </div>
     </div>

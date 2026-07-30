@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Bell, Menu, Radio, Tv, Wifi, WifiOff, Cpu } from "lucide-react";
+import { Bell, Menu, Radio, Tv, Wifi, WifiOff } from "lucide-react";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "motion/react";
 import { useTelemetry } from "../../context/TelemetryContext";
 import { PresentationView } from "./PresentationView";
 
@@ -14,7 +13,6 @@ export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
   const { mode, setMode, isOnline, isConnecting, hasError } = useTelemetry();
   const [isPresentation, setIsPresentation] = useState(false);
 
-  // Keyboard shortcut listener ('F' or 'Esc' to exit)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "f" || e.key === "F") {
@@ -31,84 +29,70 @@ export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
   }, []);
 
   const handleNotificationClick = () => {
-    toast.info("Active Telemetry Incidents", {
-      description: "Review pending alert logs on the Safety Alerts page.",
-      action: {
-        label: "View Alerts",
-        onClick: () => {
-          window.location.hash = "/alerts";
-        },
-      },
+    toast.info("Incident Log", {
+      description: "No active critical safety trips pending.",
     });
   };
 
   return (
     <>
-      <header className="sticky top-0 z-20 flex h-[72px] items-center justify-between border-b border-white/[0.08] bg-[#070b14]/90 px-5 backdrop-blur-md lg:px-8">
+      <header className="sticky top-0 z-20 flex h-[64px] items-center justify-between border-b border-[#2A3140] bg-[#0B0D12] px-6">
         <div className="flex items-center gap-4">
           <button
             aria-label="Open mobile menu"
-            className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/[0.08] lg:hidden"
+            className="grid h-8 w-8 place-items-center rounded border border-[#2A3140] bg-[#151922] text-[#94A3B8] hover:text-[#F8FAFC] lg:hidden"
             onClick={onOpenMobileMenu}
           >
-            <Menu size={20} />
+            <Menu size={18} />
           </button>
           <div>
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-              ESP32 Node #192.168.1.48 / <span className="text-blue-400 font-medium">{pageName}</span>
-            </p>
-            <h1 className="mt-0.5 text-base font-bold tracking-tight text-white md:text-lg">
-              Operational Telemetry Console
+            <h1 className="text-base font-bold text-[#F8FAFC]">
+              {pageName}
             </h1>
           </div>
         </div>
 
-        {/* Telemetry Controls, Mode Switcher & Operator Badge */}
-        <div className="flex items-center gap-4">
-          {/* Offline / Error Indicator */}
+        {/* Telemetry Status, Mode Switcher & Actions */}
+        <div className="flex items-center gap-3">
+          {/* Connection Status Indicator */}
           {!isOnline || hasError ? (
-            <span className="flex items-center gap-1.5 rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1 font-mono text-xs font-bold text-rose-400 animate-pulse">
-              <WifiOff size={13} /> {isOnline ? "ESP32 Gateway Offline" : "Network Disconnected"}
+            <span className="flex items-center gap-1.5 rounded border border-[#DC2626]/40 bg-[#DC2626]/10 px-2.5 py-1 font-mono text-xs font-medium text-[#DC2626]">
+              <WifiOff size={14} /> Disconnected
             </span>
           ) : (
-            <div className="hidden items-center gap-3 text-xs text-slate-400 md:flex font-mono">
-              <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-emerald-300">
-                <Wifi size={13} className="text-emerald-400 animate-pulse" /> WiFi 100%
-              </span>
-              <span className="flex items-center gap-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-blue-300">
-                <Radio size={13} className="text-blue-400" /> {isConnecting ? "Polling..." : "ESP32 Connected"}
+            <div className="hidden items-center gap-2 font-mono text-xs text-[#94A3B8] md:flex">
+              <span className="flex items-center gap-1.5 rounded border border-[#16A34A]/30 bg-[#16A34A]/10 px-2.5 py-1 text-[#16A34A]">
+                <span className="h-2 w-2 rounded-full bg-[#16A34A]" /> ESP32 Online
               </span>
             </div>
           )}
 
           {/* Presentation Mode Button */}
-          <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
+          <button
             onClick={() => setIsPresentation(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-1.5 font-mono text-xs font-bold text-blue-300 hover:bg-blue-500/20 transition shadow-sm"
+            className="flex items-center gap-1.5 rounded border border-[#2A3140] bg-[#151922] px-3 py-1.5 text-xs font-medium text-[#F8FAFC] hover:bg-[#2A3140]/50 transition-colors"
           >
-            <Tv size={14} /> Projector Mode (F)
-          </motion.button>
+            <Tv size={14} className="text-[#94A3B8]" /> Presentation (F)
+          </button>
 
-          {/* Live / Demo Mode Switcher */}
-          <div className="flex items-center rounded-xl border border-white/10 bg-white/[0.04] p-1 font-mono">
+          {/* Segmented Mode Switcher */}
+          <div className="flex items-center rounded border border-[#2A3140] bg-[#151922] p-0.5 font-mono text-xs">
             <button
               onClick={() => setMode("demo")}
-              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase transition ${
+              className={`rounded px-2.5 py-0.5 text-xs font-semibold transition-colors ${
                 mode === "demo"
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#2563EB] text-[#F8FAFC]"
+                  : "text-[#94A3B8] hover:text-[#F8FAFC]"
               }`}
             >
               Demo
             </button>
             <button
               onClick={() => setMode("live")}
-              className={`rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase transition ${
+              className={`rounded px-2.5 py-0.5 text-xs font-semibold transition-colors ${
                 mode === "live"
-                  ? "bg-emerald-600 text-white shadow-md"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-[#16A34A] text-[#F8FAFC]"
+                  : "text-[#94A3B8] hover:text-[#F8FAFC]"
               }`}
             >
               Live
@@ -116,36 +100,25 @@ export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
           </div>
 
           {/* Notification Bell */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             aria-label="Notifications"
             onClick={handleNotificationClick}
-            className="relative grid h-9 w-9 place-items-center rounded-xl border border-white/[0.08] bg-white/[0.04] text-slate-300 transition hover:bg-white/[0.08] hover:text-white"
+            className="grid h-8 w-8 place-items-center rounded border border-[#2A3140] bg-[#151922] text-[#94A3B8] hover:text-[#F8FAFC] transition-colors"
           >
-            <Bell size={18} />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] animate-pulse" />
-          </motion.button>
+            <Bell size={16} />
+          </button>
 
-          {/* Operator Role Badge */}
-          <div className="flex items-center gap-2.5 border-l border-white/[0.08] pl-4">
-            <div className="grid h-9 w-9 place-items-center rounded-xl border border-blue-500/30 bg-blue-900/40 font-mono text-xs font-extrabold text-blue-300 shadow-md">
-              <Cpu size={18} />
-            </div>
-            <div className="hidden text-left xl:block font-mono">
-              <p className="text-xs font-bold text-slate-200">Operator #01</p>
-              <p className="text-[10px] text-slate-500">Electrical Engineering</p>
-            </div>
+          {/* Operator Badge */}
+          <div className="hidden border-l border-[#2A3140] pl-3 text-xs font-mono text-[#94A3B8] sm:block">
+            Operator #01
           </div>
         </div>
       </header>
 
-      {/* Presentation Mode View Overlay */}
-      <AnimatePresence>
-        {isPresentation && (
-          <PresentationView onExit={() => setIsPresentation(false)} />
-        )}
-      </AnimatePresence>
+      {/* Presentation Mode Overlay */}
+      {isPresentation && (
+        <PresentationView onExit={() => setIsPresentation(false)} />
+      )}
     </>
   );
 }

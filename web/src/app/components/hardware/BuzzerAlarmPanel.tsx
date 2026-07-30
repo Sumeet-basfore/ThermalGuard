@@ -1,64 +1,63 @@
 import React, { useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
-import { motion } from "motion/react";
 import { toast } from "sonner";
 
 export function BuzzerAlarmPanel() {
   const [muted, setMuted] = useState(false);
 
   const handleTestBeep = () => {
-    toast.info("Acoustic Beep Triggered (GPIO 19)", {
-      description: "Sounded 100ms active buzzer audio verification signal.",
+    toast.info("Acoustic Beep (GPIO 19)", {
+      description: "Triggered 100ms buzzer signal.",
     });
   };
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-[#0f172a]/75 p-6 backdrop-blur-xl shadow-xl shadow-black/30">
+    <div className="rounded-lg border border-[#2A3140] bg-[#151922] p-5 shadow-sm">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400 shadow-md">
-            {muted ? <VolumeX size={22} /> : <Volume2 size={22} />}
+        <div className="flex items-center gap-2.5">
+          <div className="text-[#D97706]">
+            {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">Active Buzzer Alarm</h3>
-            <p className="text-xs text-slate-400 font-mono">ESP32 GPIO 19 · Acoustic Indicator</p>
+            <h3 className="text-sm font-bold text-[#F8FAFC]">Acoustic Warning Alarm</h3>
+            <p className="font-mono text-xs text-[#64748B]">GPIO 19 · Hardware Buzzer</p>
           </div>
         </div>
 
-        <span
-          className={`rounded-full border px-3 py-1 text-[10px] font-bold ${
-            muted
-              ? "bg-slate-500/20 text-slate-400 border-slate-500/30"
-              : "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-          }`}
-        >
-          ● {muted ? "MUTED" : "ALARM READY"}
+        <span className="flex items-center gap-1.5 font-mono text-xs font-semibold">
+          {muted ? (
+            <>
+              <span className="h-2 w-2 rounded-full bg-[#64748B]" />
+              <span className="text-[#64748B]">MUTED</span>
+            </>
+          ) : (
+            <>
+              <span className="h-2 w-2 rounded-full bg-[#16A34A]" />
+              <span className="text-[#16A34A]">READY</span>
+            </>
+          )}
         </span>
       </div>
 
-      <div className="mt-5 flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-[#0a0f1d] p-4">
+      <div className="mt-4 flex items-center justify-between gap-3 rounded border border-[#2A3140] bg-[#0B0D12] p-3.5">
         <div>
-          <p className="text-xs font-semibold text-slate-200">High-Temp Acoustic Signal</p>
-          <p className="mt-0.5 text-[11px] text-slate-400">Triggers on threshold &gt; 45°C</p>
+          <p className="text-xs font-semibold text-[#F8FAFC]">Acoustic Signal Trigger</p>
+          <p className="mt-0.5 text-[11px] text-[#64748B] font-mono">Trip Threshold &gt; 45.0°C</p>
         </div>
 
         <div className="flex items-center gap-2">
-          <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
+          <button
             onClick={handleTestBeep}
-            className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-white/[0.08] transition"
+            className="rounded border border-[#2A3140] bg-[#151922] px-2.5 py-1 text-xs font-semibold text-[#F8FAFC] hover:bg-[#2A3140] transition-colors"
           >
             Test Beep
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.04 }}
-            whileTap={{ scale: 0.96 }}
+          </button>
+          <button
             onClick={() => setMuted(!muted)}
-            className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-300 hover:bg-amber-500/20 transition"
+            className="rounded border border-[#D97706]/40 bg-[#D97706]/10 px-2.5 py-1 text-xs font-semibold text-[#D97706] hover:bg-[#D97706]/20 transition-colors"
           >
-            {muted ? "Unmute" : "Mute Alarm"}
-          </motion.button>
+            {muted ? "Unmute" : "Mute"}
+          </button>
         </div>
       </div>
     </div>
