@@ -198,32 +198,16 @@ export class ApiService {
       return SAFE_THERMAL_DEFAULTS;
     }
 
-    // Demo Mode Simulation: Dynamic 32x24 spatial gaussian heat map matrix
+    // Demo Mode Simulation
     const noise = (Math.random() - 0.5) * 0.5;
-    const maxTemp = Number((42.8 + noise).toFixed(1));
-    const minTemp = 22.1;
-    const hotX = 22;
-    const hotY = 14;
-    const pixels = new Array(768);
-
-    for (let y = 0; y < 24; y++) {
-      for (let x = 0; x < 32; x++) {
-        const dx = x - hotX;
-        const dy = y - hotY;
-        const distSq = dx * dx + dy * dy;
-        const val = minTemp + (maxTemp - minTemp) * Math.exp(-distSq / 18.0);
-        pixels[y * 32 + x] = Number((val + (Math.random() - 0.5) * 0.1).toFixed(1));
-      }
-    }
-
     return {
-      minTemp,
-      maxTemp,
+      minTemp: 22.1,
+      maxTemp: Number((42.8 + noise).toFixed(1)),
       avgTemp: 29.6,
-      hotspotX: hotX,
-      hotspotY: hotY,
+      hotspotX: 22,
+      hotspotY: 14,
       fps: 8.0,
-      pixels,
+      pixels: new Array(768).fill(25.0),
     };
   }
 
@@ -253,6 +237,25 @@ export class ApiService {
       wifiSignal: 88,
       storageUsage: 22,
     };
+  }
+
+  /**
+   * Triggers physical ESP32 GPIO 19 Buzzer Alarm beep test.
+   */
+  public static async triggerBuzzerTest(): Promise<boolean> {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const response = await fetch(`${activeEndpoint}/test-buzzer`, {
+        method: "POST",
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response.ok;
+    } catch (err) {
+      console.warn("[API Service] Buzzer test call failed or offline", err);
+      return false;
+    }
   }
 
   /**

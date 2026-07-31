@@ -75,10 +75,35 @@ function Dashboard() {
   const [relayActive, setRelayActive] = useState(true);
   const [buzzerMuted, setBuzzerMuted] = useState(false);
 
-  const handleTestBuzzer = () => {
-    toast.info("Buzzer Test Initiated (GPIO 19)", {
-      description: "Triggered 100ms hardware alert signal.",
+  const playWebAudioBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(1046.5, ctx.currentTime); // 1046.5 Hz High C beep
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    } catch (e) {}
+  };
+
+  const handleTestBuzzer = async () => {
+    playWebAudioBeep();
+    toast.info("Buzzer Test Triggered (GPIO 19)", {
+      description: "Pulsing GPIO 19 acoustic alarm...",
     });
+    const ok = await ApiService.triggerBuzzerTest();
+    if (ok) {
+      toast.success("ESP32 GPIO 19 Hardware Beep Verified!", {
+        description: "Physical buzzer pulse confirmed by gateway.",
+      });
+    }
   };
 
   const handleToggleRelayMode = () => {
