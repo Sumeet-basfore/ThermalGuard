@@ -8,12 +8,18 @@ import {
   ThermalFrameData,
 } from "./telemetryTypes";
 
-// Central ESP32 Gateway Base Endpoint
-export const ESP32_DEFAULT_IP = "192.168.1.48";
-let activeEndpoint = `http://${ESP32_DEFAULT_IP}/api`;
+// Central ESP32 Gateway Base Endpoint (Defaults to 192.168.4.1 for ThermoGuard_AP SoftAP)
+export const ESP32_DEFAULT_IP = "192.168.4.1";
+let activeIp = ESP32_DEFAULT_IP;
+let activeEndpoint = `http://${activeIp}/api`;
 
 export function setApiEndpoint(ip: string) {
-  activeEndpoint = `http://${ip}/api`;
+  activeIp = ip.trim();
+  activeEndpoint = `http://${activeIp}/api`;
+}
+
+export function getApiIp(): string {
+  return activeIp;
 }
 
 // Default Safe Telemetry Objects (Guarantees zero UI crashes on sensor disconnects)
