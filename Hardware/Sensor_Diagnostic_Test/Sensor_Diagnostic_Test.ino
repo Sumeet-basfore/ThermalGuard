@@ -4,8 +4,8 @@
   ============================================================
   Board   : ESP32 DevKit V1 (ESP-WROOM-32)
   Baud    : 115200
-  Purpose : Non-blocking self-test diagnostic tool with step-by-step
-            Serial checkpoint logging and dual I2C clock switching.
+  Purpose : Non-blocking self-test diagnostic tool with 2048-byte
+            ESP32 I2C buffer expansion to eliminate getFrame freeze.
   ============================================================
 */
 
@@ -63,11 +63,13 @@ void setup() {
   analogSetPinAttenuation(PIN_ACS712, ADC_11db);
   Serial.println(F("[2/5] ADC Pin 34 (ACS712 Current Sensor) Initialized."));
 
-  // 3. I2C Bus Setup & Scanner
+  // 3. I2C Bus Setup with 2048-byte RX/TX Buffer Expansion for MLX90640
+  Wire.setRxBufferSize(2048); // Expand ESP32 I2C RX buffer from 128 to 2048 bytes
+  Wire.setTxBufferSize(2048); // Expand ESP32 I2C TX buffer
   Wire.begin(PIN_SDA, PIN_SCL);
-  Wire.setClock(100000);   // 100kHz standard mode for scanning & LCD
-  Wire.setTimeOut(1000);   // 1000ms hardware timeout guard
-  Serial.println(F("[3/5] Scanning I2C Bus (SDA: GPIO 21, SCL: GPIO 22)..."));
+  Wire.setClock(400000);      // 400kHz fast I2C bus speed
+  Wire.setTimeOut(1000);      // 1000ms hardware timeout guard
+  Serial.println(F("[3/5] I2C 2048-byte Buffer Expanded. Scanning I2C Bus..."));
 
   byte error, address;
   int devicesFound = 0;
@@ -111,11 +113,10 @@ void setup() {
 
   // 4. MLX90640 Thermal Camera Setup
   Serial.println(F("[4/5] Initializing MLX90640 Thermal Sensor..."));
-  Wire.setClock(400000); // MLX90640 requires 400kHz fast mode for bulk 1668-byte frame transfers
   if (mlx.begin(MLX90640_I2CADDR_DEFAULT, &Wire)) {
     mlx.setMode(MLX90640_CHESS);
     mlx.setResolution(MLX90640_ADC_18BIT);
-    mlx.setRefreshRate(MLX90640_2_HZ); // 2Hz refresh rate for stable frame capture
+    mlx.setRefreshRate(MLX90640_2_HZ); // 2 Hz refresh rate
     mlxOk = true;
     Serial.println(F("      -> MLX90640 Thermal Sensor Initialized Successfully (2 FPS)."));
   } else {
@@ -149,8 +150,9 @@ void loop() {
   int hotX = 16, hotY = 12;
 
   if (mlxOk) {
-    Serial.println(F("[STEP A] Reading MLX90640 768-pixel thermal frame (400kHz I2C)..."));
-    Wire.setClock(400000); // 400kHz required for bulk frame data read
+    Serial.println(F("[STEP A] Fetching MLX90640 1668-byte frame (2048-byte buffer)..."));
+    Wire.setClock(400000);
+    delay(100); // Allow sensor subpage conversion to complete
     int status = mlx.getFrame(mlxFrame);
     if (status == 0) {
       minTemp = mlxFrame[0];
@@ -180,7 +182,7 @@ void loop() {
       Serial.print(hotY);
       Serial.println(F(") -> OK"));
     } else {
-      Serial.print(F(" -> [MLX90640] Frame read status code: "));
+      Serial.print(F(" -> [MLX90640] Frame pending/status code: "));
       Serial.println(status);
     }
   } else {
@@ -218,8 +220,8 @@ void loop() {
 
   // D. Update LCD Screen Test
   if (lcdOk) {
-    Serial.println(F("[STEP D] Updating 16x2 LCD display (100kHz I2C)..."));
-    Wire.setClock(100000); // Switch to 100kHz standard mode for LCD backpack
+    Serial.println(F("[STEP D] Updating 16x2 LCD display..."));
+    Wire.setClock(100000);
     activeLcd->clear();
     activeLcd->setCursor(0, 0);
     activeLcd->print(F("H:"));

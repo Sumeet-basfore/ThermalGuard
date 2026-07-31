@@ -279,8 +279,10 @@ void setup() {
   analogReadResolution(12);
   analogSetPinAttenuation(PIN_ACS712, ADC_11db);
 
+  Wire.setRxBufferSize(2048); // Expand ESP32 I2C RX buffer from 128 to 2048 bytes
+  Wire.setTxBufferSize(2048); // Expand ESP32 I2C TX buffer
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
-  Wire.setClock(100000); // 100kHz stable bus clock
+  Wire.setClock(400000); // 400kHz fast bus clock
   Wire.setTimeOut(1000); // 1000ms timeout protection against bus freeze
 
   initLCD();
@@ -352,13 +354,13 @@ void loop() {
 // SECTION 11: SENSOR READERS & INTERLOCKS
 // ============================================================
 void initSensors() {
-  Wire.setClock(100000);
+  Wire.setClock(400000);
   if (mlx.begin(MLX90640_I2CADDR_DEFAULT, &Wire)) {
     mlx.setMode(MLX90640_CHESS);
     mlx.setResolution(MLX90640_ADC_18BIT);
-    mlx.setRefreshRate(MLX90640_4_HZ); // Relaxed refresh rate for shared I2C stability
+    mlx.setRefreshRate(MLX90640_2_HZ); // Relaxed 2Hz refresh rate for shared I2C stability
     mlxReady = true;
-    Serial.println(F("MLX90640.......OK (4 FPS)"));
+    Serial.println(F("MLX90640.......OK (2 FPS)"));
   } else {
     mlxReady = false;
     Serial.println(F("MLX90640.......FAILED (Check I2C Address 0x33 or SDA/SCL Wiring)"));
@@ -395,7 +397,8 @@ void showBootScreen() {
 
 void readMLX() {
   if (!mlxReady) return;
-  Wire.setClock(100000); // Stable 100kHz bus speed
+  Wire.setClock(400000); // 400kHz fast mode for 1668-byte frame read
+  delay(50); // Allow sensor subpage data ready conversion
   if (mlx.getFrame(mlxFrame) != 0) return;
 
   float minT = mlxFrame[0];
