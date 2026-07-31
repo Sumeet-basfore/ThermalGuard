@@ -73,7 +73,7 @@ const unsigned long LCD_ROTATE_INTERVAL_MS   = 2500;
 const unsigned long SERIAL_STATUS_INTERVAL_MS = 2000;
 
 // ============================================================
-// SECTION 5: GLOBAL OBJECTS & SERVER
+// SECTION 5: GLOBAL OBJECTS & FUNCTION PROTOTYPES
 // ============================================================
 Adafruit_MLX90640 mlx;
 LiquidCrystal_I2C lcd27(0x27, LCD_COLUMNS, LCD_ROWS);
@@ -82,6 +82,25 @@ LiquidCrystal_I2C* activeLcd = &lcd27;
 
 DHT dht(PIN_DHT, DHT_TYPE);
 WebServer server(80);
+
+// Forward Prototypes for Strict C++ Compilation
+void initLCD();
+void showBootScreen();
+void initSensors();
+void calibrateACS712();
+void readMLX();
+void readDHT();
+void readCurrent();
+void checkSafetyInterlocks();
+void updateLCD();
+void printStatus();
+void handleCORS();
+void handleOptions();
+void handleRoot();
+void handleGetSensors();
+void handleGetThermal();
+void handleGetHealth();
+void handlePostSettings();
 
 // ============================================================
 // SECTION 6: GLOBAL STATE
@@ -126,7 +145,7 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #0b0c10; color: #e2e2e9; padding: 16px; min-height: 100vh; }
-    .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-b: 1px solid #282a30; margin-bottom: 16px; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid #282a30; margin-bottom: 16px; }
     .title { font-size: 20px; font-weight: 700; color: #3b82f6; }
     .badge { background: #2563eb22; color: #60a5fa; border: 1px solid #2563eb44; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
@@ -168,11 +187,11 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
 
   <div class="status-card">
     <div class="label">System Safety Interlock</div>
-    <div style="display:flex; justify-between:space-between; margin-top:8px;">
+    <div style="display:flex; justify-content:space-between; margin-top:8px;">
       <span style="color:#9ca3af;">Relay Status:</span>
       <strong id="relay" style="color:#34d399;">NORMAL (CLOSED)</strong>
     </div>
-    <div style="display:flex; justify-between:space-between; margin-top:8px;">
+    <div style="display:flex; justify-content:space-between; margin-top:8px;">
       <span style="color:#9ca3af;">Node Uptime:</span>
       <strong id="ts" style="color:#e2e2e9;">--</strong>
     </div>
