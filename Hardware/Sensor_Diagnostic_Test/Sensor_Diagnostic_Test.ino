@@ -63,9 +63,8 @@ void setup() {
   analogSetPinAttenuation(PIN_ACS712, ADC_11db);
   Serial.println(F("[2/5] ADC Pin 34 (ACS712 Current Sensor) Initialized."));
 
-  // 3. I2C Bus Setup with 2048-byte RX/TX Buffer Expansion for MLX90640
-  Wire.setRxBufferSize(2048); // Expand ESP32 I2C RX buffer from 128 to 2048 bytes
-  Wire.setTxBufferSize(2048); // Expand ESP32 I2C TX buffer
+  // 3. I2C Bus Setup with 2048-byte Buffer Expansion for MLX90640
+  Wire.setBufferSize(2048);   // Expand ESP32 I2C buffer from default to 2048 bytes
   Wire.begin(PIN_SDA, PIN_SCL);
   Wire.setClock(400000);      // 400kHz fast I2C bus speed
   Wire.setTimeOut(1000);      // 1000ms hardware timeout guard

@@ -279,8 +279,7 @@ void setup() {
   analogReadResolution(12);
   analogSetPinAttenuation(PIN_ACS712, ADC_11db);
 
-  Wire.setRxBufferSize(2048); // Expand ESP32 I2C RX buffer from 128 to 2048 bytes
-  Wire.setTxBufferSize(2048); // Expand ESP32 I2C TX buffer
+  Wire.setBufferSize(2048); // Expand ESP32 I2C buffer to 2048 bytes
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
   Wire.setClock(400000); // 400kHz fast bus clock
   Wire.setTimeOut(1000); // 1000ms timeout protection against bus freeze
