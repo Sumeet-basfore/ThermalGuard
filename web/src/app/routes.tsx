@@ -70,7 +70,7 @@ function Shell() {
    1. DASHBOARD VIEW (operations_dashboard/code.html)
    ========================================================================= */
 function Dashboard() {
-  const { sensorMetrics } = useTelemetry();
+  const { sensorMetrics, mode } = useTelemetry();
   const [relayAuto, setRelayAuto] = useState(true);
   const [relayActive, setRelayActive] = useState(true);
   const [buzzerMuted, setBuzzerMuted] = useState(false);
@@ -615,11 +615,53 @@ function Analytics() {
    4. ALERTS VIEW (alerts_incident_feed/code.html)
    ========================================================================= */
 function Alerts() {
+  const { mode } = useTelemetry();
   const [incidents, setIncidents] = useState([
     { id: 1, time: "2024-05-24 14:22:01.04", source: "MLX90640", desc: "Threshold Breach > 72.0C", level: "CRITICAL", ack: false },
     { id: 2, time: "2024-05-24 14:21:45.82", source: "ACS712", desc: "Relay Interlock Trip - Overcurrent", level: "WARNING", ack: false },
     { id: 3, time: "2024-05-24 14:19:12.11", source: "SYS_CORE", desc: "ADC Channel 34 Impedance Out of Range", level: "WARNING", ack: true },
   ]);
+
+  const playWebAudioBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(1046.5, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.2);
+    } catch (e) {}
+  };
+
+  const handleTestBuzzer = async () => {
+    playWebAudioBeep();
+    if (mode === "live") {
+      toast.info("Buzzer Test Triggered (GPIO 19)", {
+        description: "Pulsing GPIO 19 acoustic alarm on ESP32...",
+      });
+      const ok = await ApiService.triggerBuzzerTest();
+      if (ok) {
+        toast.success("ESP32 GPIO 19 Hardware Beep Verified!", {
+          description: "Physical buzzer pulse confirmed by gateway.",
+        });
+      } else {
+        toast.warning("Hardware Gateway Unreachable", {
+          description: "Physical ESP32 node did not respond.",
+        });
+      }
+    } else {
+      toast.success("Demo Alarm Sounded 🔔", {
+        description: "Web speaker alert tone played. Switch to Live Mode for physical GPIO 19 pulse.",
+      });
+    }
+  };
 
   const handleAck = (id: number) => {
     setIncidents(incidents.map((i) => (i.id === id ? { ...i, ack: true } : i)));
@@ -672,7 +714,7 @@ function Alerts() {
           GPIO 19: Buzzer Hardware Map
         </h3>
         <button
-          onClick={() => toast.info("Hardware Alarm Signal Triggered")}
+          onClick={handleTestBuzzer}
           className="w-full bg-[#2563eb] text-[#eeefff] py-3 rounded font-[Inter] text-[11px] font-bold uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined text-[18px]">campaign</span> Test Alarm System
