@@ -41,10 +41,9 @@ const uint8_t PIN_I2C_SCL    = 22;   // Shared I2C bus: MLX90640 + LCD
 const char* WIFI_SSID     = "ThermoGuard_AP";
 const char* WIFI_PASSWORD = "Password123";
 
-// LCD Configuration (Supports auto-detected 0x27 or 0x3F address)
-uint8_t lcdI2CAddress         = 0x27;
-const uint8_t LCD_COLUMNS     = 16;
-const uint8_t LCD_ROWS        = 2;
+// LCD Configuration
+const uint8_t LCD_COLUMNS = 16;
+const uint8_t LCD_ROWS    = 2;
 
 // MLX90640 thermal frame is 32 x 24 = 768 pixels
 const uint8_t  MLX_COLS         = 32;
@@ -77,7 +76,10 @@ const unsigned long SERIAL_STATUS_INTERVAL_MS = 2000;
 // SECTION 5: GLOBAL OBJECTS & SERVER
 // ============================================================
 Adafruit_MLX90640 mlx;
-LiquidCrystal_I2C lcd(0x27, LCD_COLUMNS, LCD_ROWS);
+LiquidCrystal_I2C lcd27(0x27, LCD_COLUMNS, LCD_ROWS);
+LiquidCrystal_I2C lcd3F(0x3F, LCD_COLUMNS, LCD_ROWS);
+LiquidCrystal_I2C* activeLcd = &lcd27;
+
 DHT dht(PIN_DHT, DHT_TYPE);
 WebServer server(80);
 
@@ -201,39 +203,60 @@ void handlePostSettings() {
 }
 
 // ============================================================
-// SECTION 8: I2C SCANNER & LCD INITIALIZATION
+// SECTION 8: FULL I2C BUS SCANNER & DUAL LCD INITIALIZER
 // ============================================================
 void initLCD() {
-  Wire.setClock(100000); // Set standard 100kHz I2C clock for LCD backpack
+  Wire.setClock(100000); // 100kHz standard I2C clock speed for LCD
   byte error, address;
-  bool found = false;
+  int nDevices = 0;
 
-  // Auto-scan I2C bus for LCD backpack at 0x27 or 0x3F
+  Serial.println(F("\n--- Scanning I2C Bus (GPIO 21 SDA, GPIO 22 SCL) ---"));
+  uint8_t detectedLcdAddr = 0;
+
   for (address = 1; address < 127; address++) {
     Wire.beginTransmission(address);
     error = Wire.endTransmission();
 
     if (error == 0) {
-      if (address == 0x27 || address == 0x3F) {
-        lcdI2CAddress = address;
-        found = true;
-        Serial.print(F("Found I2C LCD Backpack at 0x"));
-        Serial.println(address, HEX);
-        break;
+      Serial.print(F(" -> I2C Device found at address 0x"));
+      if (address < 16) Serial.print("0");
+      Serial.print(address, HEX);
+
+      if (address == 0x27 || address == 0x3F || address == 0x20 || address == 0x38) {
+        Serial.println(F(" (LCD Backpack)"));
+        if (detectedLcdAddr == 0) detectedLcdAddr = address;
+      } else if (address == 0x33) {
+        Serial.println(F(" (MLX90640 IR Camera)"));
+      } else {
+        Serial.println();
       }
+      nDevices++;
     }
   }
 
-  if (!found) {
-    lcdI2CAddress = 0x27; // Fallback default
-    Serial.println(F("LCD auto-scan fallback to default 0x27"));
+  if (nDevices == 0) {
+    Serial.println(F("WARNING: No I2C devices found! Check 3.3V/5V Power, GND, SDA (21) & SCL (22) wiring.\n"));
+  } else {
+    Serial.print(F("I2C Scan Complete: Found "));
+    Serial.print(nDevices);
+    Serial.println(F(" device(s).\n"));
   }
 
-  lcd = LiquidCrystal_I2C(lcdI2CAddress, LCD_COLUMNS, LCD_ROWS);
-  lcd.init();
-  lcd.backlight();
-  lcd.clear();
+  // Initialize selected LCD object
+  if (detectedLcdAddr == 0x3F) {
+    activeLcd = &lcd3F;
+  } else {
+    activeLcd = &lcd27;
+  }
+
+  activeLcd->init();
+  activeLcd->backlight();
+  activeLcd->clear();
   lcdReady = true;
+
+  Serial.print(F("Initialized 16x2 LCD Display at 0x"));
+  Serial.println(detectedLcdAddr != 0 ? detectedLcdAddr : 0x27, HEX);
+  Serial.println(F("NOTE: If screen backlight is ON but text is invisible, turn blue contrast potentiometer screw on LCD back.\n"));
 }
 
 // ============================================================
@@ -241,6 +264,11 @@ void initLCD() {
 // ============================================================
 void setup() {
   Serial.begin(115200);
+  delay(500);
+  Serial.println(F("\n=============================================="));
+  Serial.println(F(" ThermalGuard ESP32 Gateway Node Booting...   "));
+  Serial.println(F("=============================================="));
+
   EEPROM.begin(EEPROM_SIZE);
 
   pinMode(PIN_RELAY, OUTPUT);
@@ -330,7 +358,7 @@ void initSensors() {
     Serial.println(F("MLX90640.......OK (8 FPS)"));
   } else {
     mlxReady = false;
-    Serial.println(F("MLX90640.......FAILED"));
+    Serial.println(F("MLX90640.......FAILED (Check I2C Address 0x33 or SDA/SCL Wiring)"));
   }
 
   dht.begin();
@@ -354,11 +382,11 @@ void calibrateACS712() {
 void showBootScreen() {
   if (!lcdReady) return;
   Wire.setClock(100000);
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(F("ThermoGuard v2.4"));
-  lcd.setCursor(0, 1);
-  lcd.print(F("REST Server OK"));
+  activeLcd->clear();
+  activeLcd->setCursor(0, 0);
+  activeLcd->print(F("ThermoGuard v2.4"));
+  activeLcd->setCursor(0, 1);
+  activeLcd->print(F("REST Server OK"));
   delay(1500);
 }
 
@@ -423,61 +451,61 @@ void updateLCD() {
   if (!lcdReady) return;
   Wire.setClock(100000); // Stabilize I2C bus at 100kHz for PCF8574 LCD transactions
 
-  lcd.clear();
+  activeLcd->clear();
   switch (lcdScreenIndex) {
     case 0:
       // Overview Telemetry Screen (Hotspot & Line Current Load)
-      lcd.setCursor(0, 0);
-      lcd.print(F("HOTSPOT: "));
-      lcd.print(mlxHotspotTempC, 1);
-      lcd.print(F("C"));
+      activeLcd->setCursor(0, 0);
+      activeLcd->print(F("HOTSPOT: "));
+      activeLcd->print(mlxHotspotTempC, 1);
+      activeLcd->print(F("C"));
       
-      lcd.setCursor(0, 1);
-      lcd.print(F("CURRENT: "));
-      lcd.print(acsCurrentA, 1);
-      lcd.print(F("A"));
+      activeLcd->setCursor(0, 1);
+      activeLcd->print(F("CURRENT: "));
+      activeLcd->print(acsCurrentA, 1);
+      activeLcd->print(F("A"));
       break;
 
     case 1:
       // Environmental Sensor Telemetry Screen (DHT11 Ambient & Humidity)
-      lcd.setCursor(0, 0);
-      lcd.print(F("AMBIENT: "));
-      lcd.print(dhtTemperatureC, 1);
-      lcd.print(F("C"));
+      activeLcd->setCursor(0, 0);
+      activeLcd->print(F("AMBIENT: "));
+      activeLcd->print(dhtTemperatureC, 1);
+      activeLcd->print(F("C"));
 
-      lcd.setCursor(0, 1);
-      lcd.print(F("HUMIDITY: "));
-      lcd.print(dhtHumidityPct, 0);
-      lcd.print(F("% RH"));
+      activeLcd->setCursor(0, 1);
+      activeLcd->print(F("HUMIDITY: "));
+      activeLcd->print(dhtHumidityPct, 0);
+      activeLcd->print(F("% RH"));
       break;
 
     case 2:
       // Spatial Infrared Camera Grid Screen (MLX90640 32x24 Coordinates)
-      lcd.setCursor(0, 0);
-      lcd.print(F("MLX32x24: "));
-      lcd.print(mlxHotspotTempC, 1);
-      lcd.print(F("C"));
+      activeLcd->setCursor(0, 0);
+      activeLcd->print(F("MLX32x24: "));
+      activeLcd->print(mlxHotspotTempC, 1);
+      activeLcd->print(F("C"));
 
-      lcd.setCursor(0, 1);
-      lcd.print(F("POS: X:"));
-      lcd.print(mlxHotspotX);
-      lcd.print(F(" Y:"));
-      lcd.print(mlxHotspotY);
+      activeLcd->setCursor(0, 1);
+      activeLcd->print(F("POS: X:"));
+      activeLcd->print(mlxHotspotX);
+      activeLcd->print(F(" Y:"));
+      activeLcd->print(mlxHotspotY);
       break;
 
     case 3:
       // Safety Interlock & Node IP Address Screen
-      lcd.setCursor(0, 0);
-      lcd.print(F("RELAY: "));
+      activeLcd->setCursor(0, 0);
+      activeLcd->print(F("RELAY: "));
       if (relayIsOn) {
-        lcd.print(F("TRIPPED!!"));
+        activeLcd->print(F("TRIPPED!!"));
       } else {
-        lcd.print(F("CLOSED OK"));
+        activeLcd->print(F("CLOSED OK"));
       }
 
-      lcd.setCursor(0, 1);
-      lcd.print(F("IP:"));
-      lcd.print(WiFi.softAPIP().toString());
+      activeLcd->setCursor(0, 1);
+      activeLcd->print(F("IP:"));
+      activeLcd->print(WiFi.softAPIP().toString());
       break;
   }
   lcdScreenIndex = (lcdScreenIndex + 1) % 4;
