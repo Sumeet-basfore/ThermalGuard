@@ -95,13 +95,23 @@ function Dashboard() {
 
   const handleTestBuzzer = async () => {
     playWebAudioBeep();
-    toast.info("Buzzer Test Triggered (GPIO 19)", {
-      description: "Pulsing GPIO 19 acoustic alarm...",
-    });
-    const ok = await ApiService.triggerBuzzerTest();
-    if (ok) {
-      toast.success("ESP32 GPIO 19 Hardware Beep Verified!", {
-        description: "Physical buzzer pulse confirmed by gateway.",
+    if (mode === "live") {
+      toast.info("Buzzer Test Triggered (GPIO 19)", {
+        description: "Pulsing GPIO 19 acoustic alarm on ESP32...",
+      });
+      const ok = await ApiService.triggerBuzzerTest();
+      if (ok) {
+        toast.success("ESP32 GPIO 19 Hardware Beep Verified!", {
+          description: "Physical buzzer pulse confirmed by gateway.",
+        });
+      } else {
+        toast.warning("Hardware Gateway Unreachable", {
+          description: "Physical ESP32 node did not respond.",
+        });
+      }
+    } else {
+      toast.success("Demo Alarm Sounded 🔔", {
+        description: "Web speaker alert tone played. Switch to Live Mode for physical GPIO 19 pulse.",
       });
     }
   };

@@ -38,8 +38,8 @@ const uint8_t PIN_I2C_SCL    = 22;   // Shared I2C bus: MLX90640 + LCD
 #define EEPROM_SIZE         64
 
 // Wi-Fi Credentials (Set to your Home Wi-Fi Router Name & Password)
-const char* WIFI_SSID     = "ThermoGuard_AP";
-const char* WIFI_PASSWORD = "Password123";
+const char* WIFI_SSID     = "vivo Y100";
+const char* WIFI_PASSWORD = "niha1212";
 
 // LCD Configuration
 const uint8_t LCD_COLUMNS = 16;
