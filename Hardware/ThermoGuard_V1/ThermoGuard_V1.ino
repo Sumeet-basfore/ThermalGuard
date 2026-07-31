@@ -204,7 +204,7 @@ void handlePostSettings() {
 // SECTION 8: I2C SCANNER & LCD INITIALIZATION
 // ============================================================
 void initLCD() {
-  Wire.beginClock(100000); // Set standard 100kHz I2C clock for LCD backpack
+  Wire.setClock(100000); // Set standard 100kHz I2C clock for LCD backpack
   byte error, address;
   bool found = false;
 
@@ -321,7 +321,7 @@ void loop() {
 // SECTION 11: SENSOR READERS & INTERLOCKS
 // ============================================================
 void initSensors() {
-  Wire.beginClock(400000); // 400kHz fast I2C mode for MLX90640
+  Wire.setClock(400000); // 400kHz fast I2C mode for MLX90640
   if (mlx.begin(MLX90640_I2CADDR_DEFAULT, &Wire)) {
     mlx.setMode(MLX90640_CHESS);
     mlx.setResolution(MLX90640_ADC_18BIT);
@@ -353,7 +353,7 @@ void calibrateACS712() {
 
 void showBootScreen() {
   if (!lcdReady) return;
-  Wire.beginClock(100000);
+  Wire.setClock(100000);
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(F("ThermoGuard v2"));
@@ -364,7 +364,7 @@ void showBootScreen() {
 
 void readMLX() {
   if (!mlxReady) return;
-  Wire.beginClock(400000); // Switch to 400kHz for high-speed MLX90640 frame read
+  Wire.setClock(400000); // Switch to 400kHz for high-speed MLX90640 frame read
   if (mlx.getFrame(mlxFrame) != 0) return;
 
   float minT = mlxFrame[0];
@@ -421,7 +421,7 @@ void checkSafetyInterlocks() {
 
 void updateLCD() {
   if (!lcdReady) return;
-  Wire.beginClock(100000); // Stabilize I2C bus at 100kHz for PCF8574 LCD transactions
+  Wire.setClock(100000); // Stabilize I2C bus at 100kHz for PCF8574 LCD transactions
 
   lcd.clear();
   switch (lcdScreenIndex) {
