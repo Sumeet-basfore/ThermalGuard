@@ -41,8 +41,8 @@ const uint8_t PIN_I2C_SCL    = 22;   // Shared I2C bus: MLX90640 + LCD
 const char* WIFI_SSID     = "ThermoGuard_AP";
 const char* WIFI_PASSWORD = "Password123";
 
-// LCD: 16x2 I2C Backpack
-const uint8_t LCD_I2C_ADDRESS = 0x27;
+// LCD Configuration (Supports auto-detected 0x27 or 0x3F address)
+uint8_t lcdI2CAddress         = 0x27;
 const uint8_t LCD_COLUMNS     = 16;
 const uint8_t LCD_ROWS        = 2;
 
@@ -77,7 +77,7 @@ const unsigned long SERIAL_STATUS_INTERVAL_MS = 2000;
 // SECTION 5: GLOBAL OBJECTS & SERVER
 // ============================================================
 Adafruit_MLX90640 mlx;
-LiquidCrystal_I2C lcd(LCD_I2C_ADDRESS, LCD_COLUMNS, LCD_ROWS);
+LiquidCrystal_I2C lcd(0x27, LCD_COLUMNS, LCD_ROWS);
 DHT dht(PIN_DHT, DHT_TYPE);
 WebServer server(80);
 
@@ -92,6 +92,7 @@ float mlxHotspotTempC = 42.8;
 int   mlxHotspotX     = 22;
 int   mlxHotspotY     = 14;
 bool  mlxReady        = false;
+bool  lcdReady        = false;
 
 float dhtTemperatureC = 27.4;
 float dhtHumidityPct  = 46.0;
@@ -200,7 +201,43 @@ void handlePostSettings() {
 }
 
 // ============================================================
-// SECTION 8: SETUP & HARDWARE INIT
+// SECTION 8: I2C SCANNER & LCD INITIALIZATION
+// ============================================================
+void initLCD() {
+  Wire.beginClock(100000); // Set standard 100kHz I2C clock for LCD backpack
+  byte error, address;
+  bool found = false;
+
+  // Auto-scan I2C bus for LCD backpack at 0x27 or 0x3F
+  for (address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+
+    if (error == 0) {
+      if (address == 0x27 || address == 0x3F) {
+        lcdI2CAddress = address;
+        found = true;
+        Serial.print(F("Found I2C LCD Backpack at 0x"));
+        Serial.println(address, HEX);
+        break;
+      }
+    }
+  }
+
+  if (!found) {
+    lcdI2CAddress = 0x27; // Fallback default
+    Serial.println(F("LCD auto-scan fallback to default 0x27"));
+  }
+
+  lcd = LiquidCrystal_I2C(lcdI2CAddress, LCD_COLUMNS, LCD_ROWS);
+  lcd.init();
+  lcd.backlight();
+  lcd.clear();
+  lcdReady = true;
+}
+
+// ============================================================
+// SECTION 9: SETUP & HARDWARE INIT
 // ============================================================
 void setup() {
   Serial.begin(115200);
@@ -215,9 +252,7 @@ void setup() {
   analogSetPinAttenuation(PIN_ACS712, ADC_11db);
 
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
-
-  lcd.init();
-  lcd.backlight();
+  initLCD();
   showBootScreen();
 
   initSensors();
@@ -247,7 +282,7 @@ void setup() {
 }
 
 // ============================================================
-// SECTION 9: MAIN LOOP
+// SECTION 10: MAIN LOOP
 // ============================================================
 void loop() {
   server.handleClient();
@@ -283,9 +318,10 @@ void loop() {
 }
 
 // ============================================================
-// SECTION 10: SENSOR READERS & INTERLOCKS
+// SECTION 11: SENSOR READERS & INTERLOCKS
 // ============================================================
 void initSensors() {
+  Wire.beginClock(400000); // 400kHz fast I2C mode for MLX90640
   if (mlx.begin(MLX90640_I2CADDR_DEFAULT, &Wire)) {
     mlx.setMode(MLX90640_CHESS);
     mlx.setResolution(MLX90640_ADC_18BIT);
@@ -316,6 +352,8 @@ void calibrateACS712() {
 }
 
 void showBootScreen() {
+  if (!lcdReady) return;
+  Wire.beginClock(100000);
   lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print(F("ThermoGuard v2"));
@@ -326,6 +364,7 @@ void showBootScreen() {
 
 void readMLX() {
   if (!mlxReady) return;
+  Wire.beginClock(400000); // Switch to 400kHz for high-speed MLX90640 frame read
   if (mlx.getFrame(mlxFrame) != 0) return;
 
   float minT = mlxFrame[0];
@@ -381,6 +420,9 @@ void checkSafetyInterlocks() {
 }
 
 void updateLCD() {
+  if (!lcdReady) return;
+  Wire.beginClock(100000); // Stabilize I2C bus at 100kHz for PCF8574 LCD transactions
+
   lcd.clear();
   switch (lcdScreenIndex) {
     case 0:
