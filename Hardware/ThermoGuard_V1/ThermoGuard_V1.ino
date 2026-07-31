@@ -115,6 +115,90 @@ unsigned long tLastCurrent = 0;
 unsigned long tLastLcd     = 0;
 unsigned long tLastStatus  = 0;
 
+// Embedded Mobile Web Dashboard HTML Page
+const char INDEX_HTML[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ThermoGuard Mobile Console</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: #0b0c10; color: #e2e2e9; padding: 16px; min-height: 100vh; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-b: 1px solid #282a30; margin-bottom: 16px; }
+    .title { font-size: 20px; font-weight: 700; color: #3b82f6; }
+    .badge { background: #2563eb22; color: #60a5fa; border: 1px solid #2563eb44; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .card { background: #13151b; border: 1px solid #282a30; border-radius: 12px; padding: 16px; text-align: center; }
+    .label { font-size: 11px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .val { font-size: 24px; font-weight: 800; color: #f3f4f6; }
+    .unit { font-size: 14px; font-weight: 500; color: #9ca3af; }
+    .hot { color: #f87171; }
+    .amb { color: #34d399; }
+    .cur { color: #fbbf24; }
+    .status-card { background: #13151b; border: 1px solid #282a30; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .btn { display: block; width: 100%; text-align: center; background: #2563eb; color: white; padding: 12px; border-radius: 8px; font-weight: 700; text-decoration: none; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">⚡ ThermoGuard</div>
+    <div class="badge">ESP32 Gateway Live</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">IR Hotspot</div>
+      <div class="val hot" id="hot">--°C</div>
+    </div>
+    <div class="card">
+      <div class="label">Line Current</div>
+      <div class="val cur" id="cur">-- A</div>
+    </div>
+    <div class="card">
+      <div class="label">Ambient Temp</div>
+      <div class="val amb" id="amb">--°C</div>
+    </div>
+    <div class="card">
+      <div class="label">Humidity</div>
+      <div class="val" id="hmd">--%</div>
+    </div>
+  </div>
+
+  <div class="status-card">
+    <div class="label">System Safety Interlock</div>
+    <div style="display:flex; justify-between:space-between; margin-top:8px;">
+      <span style="color:#9ca3af;">Relay Status:</span>
+      <strong id="relay" style="color:#34d399;">NORMAL (CLOSED)</strong>
+    </div>
+    <div style="display:flex; justify-between:space-between; margin-top:8px;">
+      <span style="color:#9ca3af;">Node Uptime:</span>
+      <strong id="ts" style="color:#e2e2e9;">--</strong>
+    </div>
+  </div>
+
+  <a href="https://thermalguard.vercel.app" class="btn" target="_blank">Open Full Web Dashboard 🚀</a>
+
+  <script>
+    async function update() {
+      try {
+        const res = await fetch('/api/sensors');
+        const data = await res.json();
+        document.getElementById('hot').innerText = data.hotspotTemp.toFixed(1) + '°C';
+        document.getElementById('amb').innerText = data.ambientTemp.toFixed(1) + '°C';
+        document.getElementById('hmd').innerText = Math.round(data.humidity) + '%';
+        document.getElementById('cur').innerText = data.lineCurrent.toFixed(1) + ' A';
+        document.getElementById('ts').innerText = data.timestamp;
+      } catch (e) {}
+    }
+    setInterval(update, 1500);
+    update();
+  </script>
+</body>
+</html>
+)rawliteral";
+
 // ============================================================
 // SECTION 7: REST API HANDLERS
 // ============================================================
@@ -127,6 +211,11 @@ void handleCORS() {
 void handleOptions() {
   handleCORS();
   server.send(204);
+}
+
+void handleRoot() {
+  handleCORS();
+  server.send_P(200, "text/html", INDEX_HTML);
 }
 
 void handleGetSensors() {
@@ -295,6 +384,9 @@ void setup() {
   WiFi.softAP(WIFI_SSID, WIFI_PASSWORD);
   Serial.print(F("AP IP Address: "));
   Serial.println(WiFi.softAPIP());
+
+  // Setup Root Mobile Dashboard Handler
+  server.on("/", HTTP_GET, handleRoot);
 
   // Setup REST endpoints
   server.on("/api/sensors", HTTP_GET, handleGetSensors);
