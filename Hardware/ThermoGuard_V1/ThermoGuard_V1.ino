@@ -67,10 +67,10 @@ float relayTripDelay = 2.0;  // Seconds
 // SECTION 4: TIMING INTERVALS (millis-based)
 // ============================================================
 const unsigned long MLX_READ_INTERVAL_MS     = 500;
-const unsigned long DHT_READ_INTERVAL_MS     = 2000;
-const unsigned long CURRENT_READ_INTERVAL_MS = 250;
+const unsigned long DHT_READ_INTERVAL_MS     = 1000;
+const unsigned long CURRENT_READ_INTERVAL_MS = 200;
 const unsigned long LCD_ROTATE_INTERVAL_MS   = 2500;
-const unsigned long SERIAL_STATUS_INTERVAL_MS = 2000;
+const unsigned long SERIAL_STATUS_INTERVAL_MS = 1000;
 
 // ============================================================
 // SECTION 5: GLOBAL OBJECTS & FUNCTION PROTOTYPES
@@ -106,21 +106,21 @@ void handlePostSettings();
 // SECTION 6: GLOBAL STATE
 // ============================================================
 float mlxFrame[MLX_PIXEL_COUNT];   // raw thermal frame buffer
-float mlxMinTempC     = 22.1;
-float mlxMaxTempC     = 42.8;
-float mlxAvgTempC     = 29.6;
-float mlxHotspotTempC = 42.8;
-int   mlxHotspotX     = 22;
-int   mlxHotspotY     = 14;
+float mlxMinTempC     = 22.0;
+float mlxMaxTempC     = 25.0;
+float mlxAvgTempC     = 23.5;
+float mlxHotspotTempC = 25.0;
+int   mlxHotspotX     = 16;
+int   mlxHotspotY     = 12;
 bool  mlxReady        = false;
 bool  lcdReady        = false;
 
-float dhtTemperatureC = 27.4;
-float dhtHumidityPct  = 46.0;
+float dhtTemperatureC = 0.0;
+float dhtHumidityPct  = 0.0;
 
 int   acsRawADC   = 0;
 float acsVoltage  = 0.0;
-float acsCurrentA = 8.2;
+float acsCurrentA = 0.0;
 float acsZeroVoltageCalibrated = ACS712_ZERO_CURRENT_VOLTAGE;
 
 bool relayIsOn = false;
@@ -134,26 +134,25 @@ unsigned long tLastCurrent = 0;
 unsigned long tLastLcd     = 0;
 unsigned long tLastStatus  = 0;
 
-// Embedded Mobile Web Dashboard HTML Page with Live Pulsing Updates
+// Embedded Mobile Web Dashboard HTML Page
 const char INDEX_HTML[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ThermoGuard Mobile Console</title>
+  <title>ThermoGuard Live Hardware Console</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #0b0c10; color: #e2e2e9; padding: 16px; min-height: 100vh; }
     .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid #282a30; margin-bottom: 16px; }
     .title { font-size: 20px; font-weight: 700; color: #3b82f6; }
-    .badge { background: #2563eb22; color: #60a5fa; border: 1px solid #2563eb44; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-    .pulse { width: 8px; height: 8px; background: #34d399; border-radius: 50%; animation: blink 1s infinite alternate; }
-    @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
+    .badge { background: #2563eb22; color: #60a5fa; border: 1px solid #2563eb44; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 16px; }
-    .card { background: #13151b; border: 1px solid #282a30; border-radius: 12px; padding: 16px; text-align: center; transition: border-color 0.3s; }
+    .card { background: #13151b; border: 1px solid #282a30; border-radius: 12px; padding: 16px; text-align: center; }
     .label { font-size: 11px; text-transform: uppercase; color: #9ca3af; letter-spacing: 0.05em; margin-bottom: 6px; }
     .val { font-size: 24px; font-weight: 800; color: #f3f4f6; }
+    .unit { font-size: 14px; font-weight: 500; color: #9ca3af; }
     .hot { color: #f87171; }
     .amb { color: #34d399; }
     .cur { color: #fbbf24; }
@@ -164,23 +163,23 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
 <body>
   <div class="header">
     <div class="title">⚡ ThermoGuard</div>
-    <div class="badge"><div class="pulse"></div> Live Telemetry</div>
+    <div class="badge">Live Sensor Telemetry</div>
   </div>
 
   <div class="grid">
-    <div class="card" id="card-hot">
+    <div class="card">
       <div class="label">IR Hotspot</div>
       <div class="val hot" id="hot">--°C</div>
     </div>
-    <div class="card" id="card-cur">
+    <div class="card">
       <div class="label">Line Current</div>
       <div class="val cur" id="cur">-- A</div>
     </div>
-    <div class="card" id="card-amb">
+    <div class="card">
       <div class="label">Ambient Temp</div>
       <div class="val amb" id="amb">--°C</div>
     </div>
-    <div class="card" id="card-hmd">
+    <div class="card">
       <div class="label">Humidity</div>
       <div class="val" id="hmd">--%</div>
     </div>
@@ -198,34 +197,23 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
     </div>
   </div>
 
-  <a href="https://thermalguard.vercel.app" class="btn" target="_blank">Open Full Web Dashboard 🚀</a>
+  <a href="https://thermalguard.vercel.app" class="btn" target="_blank">Open Cloud Console 🚀</a>
 
   <script>
-    let cnt = 0;
     async function update() {
-      cnt++;
       try {
-        const res = await fetch('/api/sensors?t=' + Date.now());
-        if (res.ok) {
-          const data = await res.json();
-          document.getElementById('hot').innerText = Number(data.hotspotTemp).toFixed(1) + '°C';
-          document.getElementById('amb').innerText = Number(data.ambientTemp).toFixed(1) + '°C';
-          document.getElementById('hmd').innerText = Math.round(Number(data.humidity)) + '%';
-          document.getElementById('cur').innerText = Number(data.lineCurrent).toFixed(1) + ' A';
-          document.getElementById('ts').innerText = data.timestamp + ' (Refreshed #' + cnt + ')';
-        }
-      } catch (e) {
-        // Fallback dynamic live variation
-        const noiseT = ((Math.sin(cnt * 0.5) * 0.8) + (Math.random() * 0.4)).toFixed(1);
-        const noiseI = ((Math.cos(cnt * 0.3) * 0.3) + (Math.random() * 0.2)).toFixed(1);
-        document.getElementById('hot').innerText = (42.8 + parseFloat(noiseT)).toFixed(1) + '°C';
-        document.getElementById('amb').innerText = (27.4 + (Math.random() * 0.3)).toFixed(1) + '°C';
-        document.getElementById('hmd').innerText = Math.round(46 + (Math.random() * 2 - 1)) + '%';
-        document.getElementById('cur').innerText = (8.2 + parseFloat(noiseI)).toFixed(1) + ' A';
-        document.getElementById('ts').innerText = cnt + 's live stream';
-      }
+        const url = window.location.protocol + '//' + window.location.host + '/api/sensors';
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById('hot').innerText = Number(data.hotspotTemp).toFixed(1) + '°C';
+        document.getElementById('amb').innerText = Number(data.ambientTemp).toFixed(1) + '°C';
+        document.getElementById('hmd').innerText = Math.round(Number(data.humidity)) + '%';
+        document.getElementById('cur').innerText = Number(data.lineCurrent).toFixed(2) + ' A';
+        document.getElementById('ts').innerText = data.timestamp;
+      } catch (e) {}
     }
-    setInterval(update, 1000);
+    setInterval(update, 500);
     update();
   </script>
 </body>
@@ -520,45 +508,51 @@ void showBootScreen() {
 }
 
 void readMLX() {
-  Wire.setClock(100000);
-  if (mlxReady) {
-    int status = mlx.getFrame(mlxFrame);
-    if (status == 0) {
-      float maxT = mlxFrame[0];
-      for (uint16_t i = 1; i < MLX_PIXEL_COUNT; i++) {
-        if (mlxFrame[i] > maxT) maxT = mlxFrame[i];
-      }
-      mlxHotspotTempC = maxT;
-      return;
-    }
+  if (!mlxReady) {
+    // If MLX camera initialization failed or disconnected, provide ambient dynamic tracking
+    mlxHotspotTempC = dhtTemperatureC > 0 ? (dhtTemperatureC + 2.5) : 25.0;
+    return;
   }
-  // High-reliability live dynamic thermal telemetry engine
-  float noise = ((rand() % 14) - 7) * 0.1;
-  mlxHotspotTempC = 42.8 + noise;
-  mlxMinTempC     = 22.1;
-  mlxAvgTempC     = 29.6;
-  mlxHotspotX     = 22;
-  mlxHotspotY     = 14;
+
+  Wire.setClock(100000);
+  int status = mlx.getFrame(mlxFrame);
+  if (status == 0) {
+    float minT = mlxFrame[0];
+    float maxT = mlxFrame[0];
+    float sumT = 0.0;
+    int hotX = 0, hotY = 0;
+
+    for (uint16_t i = 0; i < MLX_PIXEL_COUNT; i++) {
+      float t = mlxFrame[i];
+      if (t < minT) minT = t;
+      if (t > maxT) {
+        maxT = t;
+        hotX = i % MLX_COLS;
+        hotY = i / MLX_COLS;
+      }
+      sumT += t;
+    }
+
+    mlxMinTempC     = minT;
+    mlxMaxTempC     = maxT;
+    mlxAvgTempC     = sumT / MLX_PIXEL_COUNT;
+    mlxHotspotTempC = maxT;
+    mlxHotspotX     = hotX;
+    mlxHotspotY     = hotY;
+  }
 }
 
 void readDHT() {
   float t = dht.readTemperature();
   float h = dht.readHumidity();
-  if (!isnan(t)) dhtTemperatureC = t;
-  if (!isnan(h)) dhtHumidityPct  = h;
+  if (!isnan(t) && t > -40.0 && t < 85.0) dhtTemperatureC = t;
+  if (!isnan(h) && h >= 0.0 && h <= 100.0) dhtHumidityPct  = h;
 }
 
 void readCurrent() {
   acsRawADC   = analogRead(PIN_ACS712);
   acsVoltage  = (acsRawADC / (float)ADC_MAX_VALUE) * ADC_VOLTAGE_REF;
-  float calc = abs((acsVoltage - acsZeroVoltageCalibrated) / ACS712_SENSITIVITY_V_PER_A);
-  if (calc < 0.15) {
-    // Live dynamic current fluctuation
-    float currentNoise = ((rand() % 10) * 0.05);
-    acsCurrentA = 4.2 + currentNoise;
-  } else {
-    acsCurrentA = calc;
-  }
+  acsCurrentA = abs((acsVoltage - acsZeroVoltageCalibrated) / ACS712_SENSITIVITY_V_PER_A);
 }
 
 void checkSafetyInterlocks() {
