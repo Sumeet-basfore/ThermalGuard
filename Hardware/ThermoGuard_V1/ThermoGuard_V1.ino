@@ -550,14 +550,38 @@ void showBootScreen() {
 
 void readMLX() {
   if (!mlxReady) return;
-  Wire.setClock(100000);
-  // High-reliability non-blocking telemetry engine
-  float noise = ((rand() % 10) - 5) * 0.1;
-  mlxHotspotTempC = 42.8 + noise;
-  mlxMinTempC     = 22.1;
-  mlxAvgTempC     = 29.6;
-  mlxHotspotX     = 22;
-  mlxHotspotY     = 14;
+  Wire.setClock(400000); // High-speed 400kHz I2C clock for 768 spatial float frame fetch
+  
+  if (mlx.getFrame(mlxFrame) == 0) {
+    float minVal = 999.0;
+    float maxVal = -999.0;
+    float sumVal = 0.0;
+    uint8_t maxX = 16;
+    uint8_t maxY = 12;
+
+    for (uint8_t h = 0; h < 24; h++) {
+      for (uint8_t w = 0; w < 32; w++) {
+        uint16_t i = h * 32 + w;
+        float t = mlxFrame[i];
+        if (t < minVal) minVal = t;
+        if (t > maxVal) {
+          maxVal = t;
+          maxX = w;
+          maxY = h;
+        }
+        sumVal += t;
+      }
+    }
+
+    // Filter out invalid sensor glitches
+    if (maxVal > -40.0 && maxVal < 300.0) {
+      mlxHotspotTempC = maxVal;
+      mlxMinTempC     = minVal;
+      mlxAvgTempC     = sumVal / 768.0;
+      mlxHotspotX     = maxX;
+      mlxHotspotY     = maxY;
+    }
+  }
 }
 
 void readDHT() {

@@ -198,14 +198,18 @@ export class ApiService {
       return SAFE_THERMAL_DEFAULTS;
     }
 
-    // Demo Mode Simulation
-    const noise = (Math.random() - 0.5) * 0.5;
+    // Demo Mode Simulation - Dynamic Hotspot Orbit
+    const time = Date.now() / 2000;
+    const noise = (Math.random() - 0.5) * 0.4;
+    const dynX = Math.round(16 + Math.sin(time) * 10);
+    const dynY = Math.round(12 + Math.cos(time * 0.8) * 8);
+
     return {
       minTemp: 22.1,
       maxTemp: Number((42.8 + noise).toFixed(1)),
       avgTemp: 29.6,
-      hotspotX: 22,
-      hotspotY: 14,
+      hotspotX: dynX,
+      hotspotY: dynY,
       fps: 8.0,
       pixels: new Array(768).fill(25.0),
     };
