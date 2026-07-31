@@ -226,7 +226,7 @@ void initLCD() {
         Serial.println(F(" (LCD Backpack)"));
         if (detectedLcdAddr == 0) detectedLcdAddr = address;
       } else if (address == 0x33) {
-        Serial.println(F(" (MLX90640 IR Camera)"));
+        Serial.println(F(" (MLX IR Camera Sensor)"));
       } else {
         Serial.println();
       }
@@ -281,8 +281,8 @@ void setup() {
 
   Wire.setBufferSize(2048); // Expand ESP32 I2C buffer to 2048 bytes
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
-  Wire.setClock(400000); // 400kHz fast bus clock
-  Wire.setTimeOut(1000); // 1000ms timeout protection against bus freeze
+  Wire.setClock(100000);   // 100kHz standard bus clock
+  Wire.setTimeOut(1000);   // 1000ms timeout protection against bus freeze
 
   initLCD();
   showBootScreen();
@@ -353,20 +353,20 @@ void loop() {
 // SECTION 11: SENSOR READERS & INTERLOCKS
 // ============================================================
 void initSensors() {
-  Wire.setClock(400000);
+  Wire.setClock(100000);
   if (mlx.begin(MLX90640_I2CADDR_DEFAULT, &Wire)) {
     mlx.setMode(MLX90640_CHESS);
     mlx.setResolution(MLX90640_ADC_18BIT);
-    mlx.setRefreshRate(MLX90640_2_HZ); // Relaxed 2Hz refresh rate for shared I2C stability
+    mlx.setRefreshRate(MLX90640_1_HZ); // 1Hz for maximum timing stability
     mlxReady = true;
-    Serial.println(F("MLX90640.......OK (2 FPS)"));
+    Serial.println(F("MLX Thermal Sensor.......OK (1 FPS)"));
   } else {
     mlxReady = false;
-    Serial.println(F("MLX90640.......FAILED (Check I2C Address 0x33 or SDA/SCL Wiring)"));
+    Serial.println(F("MLX Thermal Sensor.......FAILED (Check I2C Address 0x33 or SDA/SCL Wiring)"));
   }
 
   dht.begin();
-  Serial.println(F("DHT11..........OK"));
+  Serial.println(F("DHT11...................OK"));
 }
 
 void calibrateACS712() {
@@ -396,9 +396,11 @@ void showBootScreen() {
 
 void readMLX() {
   if (!mlxReady) return;
-  Wire.setClock(400000); // 400kHz fast mode for 1668-byte frame read
-  delay(50); // Allow sensor subpage data ready conversion
-  if (mlx.getFrame(mlxFrame) != 0) return;
+  Wire.setClock(100000); // Stable 100kHz bus speed
+  if (mlx.getFrame(mlxFrame) != 0) {
+    // Non-blocking fallback if frame is unfulfilled or variant differs
+    return;
+  }
 
   float minT = mlxFrame[0];
   float maxT = mlxFrame[0];
