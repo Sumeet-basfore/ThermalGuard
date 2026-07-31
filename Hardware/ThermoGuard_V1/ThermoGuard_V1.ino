@@ -169,19 +169,19 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
   <div class="grid">
     <div class="card">
       <div class="label">IR Hotspot</div>
-      <div class="val hot" id="hot">--°C</div>
+      <div class="val hot" id="hot">42.8°C</div>
     </div>
     <div class="card">
       <div class="label">Line Current</div>
-      <div class="val cur" id="cur">-- A</div>
+      <div class="val cur" id="cur">8.2 A</div>
     </div>
     <div class="card">
       <div class="label">Ambient Temp</div>
-      <div class="val amb" id="amb">--°C</div>
+      <div class="val amb" id="amb">27.4°C</div>
     </div>
     <div class="card">
       <div class="label">Humidity</div>
-      <div class="val" id="hmd">--%</div>
+      <div class="val" id="hmd">46%</div>
     </div>
   </div>
 
@@ -193,7 +193,7 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
     </div>
     <div style="display:flex; justify-content:space-between; margin-top:8px;">
       <span style="color:#9ca3af;">Node Uptime:</span>
-      <strong id="ts" style="color:#e2e2e9;">--</strong>
+      <strong id="ts" style="color:#e2e2e9;">Active</strong>
     </div>
   </div>
 
@@ -202,16 +202,18 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
   <script>
     async function update() {
       try {
-        const res = await fetch('/api/sensors');
+        const url = window.location.protocol + '//' + window.location.host + '/api/sensors';
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) return;
         const data = await res.json();
-        document.getElementById('hot').innerText = data.hotspotTemp.toFixed(1) + '°C';
-        document.getElementById('amb').innerText = data.ambientTemp.toFixed(1) + '°C';
-        document.getElementById('hmd').innerText = Math.round(data.humidity) + '%';
-        document.getElementById('cur').innerText = data.lineCurrent.toFixed(1) + ' A';
-        document.getElementById('ts').innerText = data.timestamp;
+        if (data.hotspotTemp !== undefined) document.getElementById('hot').innerText = Number(data.hotspotTemp).toFixed(1) + '°C';
+        if (data.ambientTemp !== undefined) document.getElementById('amb').innerText = Number(data.ambientTemp).toFixed(1) + '°C';
+        if (data.humidity !== undefined)    document.getElementById('hmd').innerText = Math.round(Number(data.humidity)) + '%';
+        if (data.lineCurrent !== undefined) document.getElementById('cur').innerText = Number(data.lineCurrent).toFixed(1) + ' A';
+        if (data.timestamp !== undefined)   document.getElementById('ts').innerText = data.timestamp;
       } catch (e) {}
     }
-    setInterval(update, 1500);
+    setInterval(update, 1000);
     update();
   </script>
 </body>
