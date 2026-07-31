@@ -93,6 +93,7 @@ int   mlxHotspotX     = 22;
 int   mlxHotspotY     = 14;
 bool  mlxReady        = false;
 bool  lcdReady        = false;
+bool  dhtReady        = false;
 
 float dhtTemperatureC = 27.4;
 float dhtHumidityPct  = 46.0;
@@ -130,11 +131,16 @@ void handleOptions() {
 void handleGetSensors() {
   handleCORS();
   StaticJsonDocument<256> doc;
-  doc["hotspotTemp"] = mlxHotspotTempC;
-  doc["ambientTemp"] = dhtTemperatureC;
-  doc["humidity"]    = dhtHumidityPct;
-  doc["lineCurrent"] = acsCurrentA;
-  doc["timestamp"]   = String(millis() / 1000) + "s";
+
+  doc["hotspotTemp"]   = mlxReady ? mlxHotspotTempC : -999.0;
+  doc["ambientTemp"]   = dhtReady ? dhtTemperatureC : -999.0;
+  doc["humidity"]      = dhtReady ? dhtHumidityPct : -999.0;
+  doc["lineCurrent"]   = acsCurrentA;
+  doc["timestamp"]     = String(millis() / 1000) + "s";
+  doc["mlxConnected"] = mlxReady;
+  doc["dhtConnected"] = dhtReady;
+  doc["acsConnected"] = true;
+  doc["relayState"]   = relayIsOn;
 
   String response;
   serializeJson(doc, response);
@@ -144,16 +150,17 @@ void handleGetSensors() {
 void handleGetThermal() {
   handleCORS();
   DynamicJsonDocument doc(12288);
-  doc["minTemp"]  = mlxMinTempC;
-  doc["maxTemp"]  = mlxMaxTempC;
-  doc["avgTemp"]  = mlxAvgTempC;
-  doc["hotspotX"] = mlxHotspotX;
-  doc["hotspotY"] = mlxHotspotY;
-  doc["fps"]      = 8.0;
+  doc["minTemp"]      = mlxReady ? mlxMinTempC : 20.0;
+  doc["maxTemp"]      = mlxReady ? mlxMaxTempC : 25.0;
+  doc["avgTemp"]      = mlxReady ? mlxAvgTempC : 22.5;
+  doc["hotspotX"]     = mlxHotspotX;
+  doc["hotspotY"]     = mlxHotspotY;
+  doc["fps"]          = mlxReady ? 8.0 : 0.0;
+  doc["mlxConnected"] = mlxReady;
 
   JsonArray pixelsArr = doc.createNestedArray("pixels");
   for (uint16_t i = 0; i < MLX_PIXEL_COUNT; i++) {
-    pixelsArr.add(mlxFrame[i]);
+    pixelsArr.add(mlxReady ? mlxFrame[i] : 22.5);
   }
 
   String response;
@@ -208,7 +215,6 @@ void initLCD() {
   byte error, address;
   bool found = false;
 
-  // Auto-scan I2C bus for LCD backpack at 0x27 or 0x3F
   for (address = 1; address < 127; address++) {
     Wire.beginTransmission(address);
     error = Wire.endTransmission();
@@ -258,13 +264,11 @@ void setup() {
   initSensors();
   calibrateACS712();
 
-  // Start WiFi Station & SoftAP fallback
   WiFi.mode(WIFI_AP_STA);
   WiFi.softAP(WIFI_SSID, WIFI_PASSWORD);
   Serial.print(F("AP IP Address: "));
   Serial.println(WiFi.softAPIP());
 
-  // Setup REST endpoints
   server.on("/api/sensors", HTTP_GET, handleGetSensors);
   server.on("/api/sensors", HTTP_OPTIONS, handleOptions);
 
@@ -313,7 +317,6 @@ void loop() {
     printStatus();
   }
 
-  // Safety Interlock Rule Check
   checkSafetyInterlocks();
 }
 
@@ -334,6 +337,7 @@ void initSensors() {
   }
 
   dht.begin();
+  dhtReady = true;
   Serial.println(F("DHT11..........OK"));
 }
 
@@ -364,8 +368,11 @@ void showBootScreen() {
 
 void readMLX() {
   if (!mlxReady) return;
-  Wire.setClock(400000); // Switch to 400kHz for high-speed MLX90640 frame read
-  if (mlx.getFrame(mlxFrame) != 0) return;
+  Wire.setClock(400000);
+  if (mlx.getFrame(mlxFrame) != 0) {
+    mlxReady = false;
+    return;
+  }
 
   float minT = mlxFrame[0];
   float maxT = mlxFrame[0];
@@ -394,8 +401,13 @@ void readMLX() {
 void readDHT() {
   float t = dht.readTemperature();
   float h = dht.readHumidity();
-  if (!isnan(t)) dhtTemperatureC = t;
-  if (!isnan(h)) dhtHumidityPct  = h;
+  if (!isnan(t) && !isnan(h)) {
+    dhtTemperatureC = t;
+    dhtHumidityPct  = h;
+    dhtReady = true;
+  } else {
+    dhtReady = false;
+  }
 }
 
 void readCurrent() {
@@ -405,10 +417,9 @@ void readCurrent() {
 }
 
 void checkSafetyInterlocks() {
-  // Overcurrent or Overheat Interlock
-  if (acsCurrentA >= currentLimit || mlxHotspotTempC >= tempThreshold) {
-    digitalWrite(PIN_RELAY, HIGH); // Open Relay (Trip Line)
-    digitalWrite(PIN_BUZZER, HIGH); // Sound Acoustic Alarm
+  if (acsCurrentA >= currentLimit || (mlxReady && mlxHotspotTempC >= tempThreshold)) {
+    digitalWrite(PIN_RELAY, HIGH);
+    digitalWrite(PIN_BUZZER, HIGH);
     relayIsOn = true;
     buzzerIsOn = true;
   } else {
@@ -421,7 +432,7 @@ void checkSafetyInterlocks() {
 
 void updateLCD() {
   if (!lcdReady) return;
-  Wire.setClock(100000); // Stabilize I2C bus at 100kHz for PCF8574 LCD transactions
+  Wire.setClock(100000);
 
   lcd.clear();
   switch (lcdScreenIndex) {
@@ -434,15 +445,21 @@ void updateLCD() {
 
     case 1:
       lcd.setCursor(0, 0);
-      lcd.print(F("Hotspot: "));
-      lcd.print(mlxHotspotTempC, 1);
-      lcd.print(F("C"));
+      lcd.print(F("Hotspot:"));
+      if (mlxReady) {
+        lcd.print(mlxHotspotTempC, 1);
+        lcd.print(F("C"));
+      } else {
+        lcd.print(F("OFFLINE"));
+      }
       lcd.setCursor(0, 1);
-      lcd.print(F("Amb: "));
-      lcd.print(dhtTemperatureC, 1);
-      lcd.print(F("C "));
-      lcd.print(dhtHumidityPct, 0);
-      lcd.print(F("%"));
+      lcd.print(F("Amb:"));
+      if (dhtReady) {
+        lcd.print(dhtTemperatureC, 1);
+        lcd.print(F("C"));
+      } else {
+        lcd.print(F("OFFLINE"));
+      }
       break;
 
     case 2:
@@ -459,23 +476,25 @@ void updateLCD() {
       lcd.setCursor(0, 0);
       lcd.print(F("MLX (32x24)"));
       lcd.setCursor(0, 1);
-      lcd.print(F("X:"));
-      lcd.print(mlxHotspotX);
-      lcd.print(F(" Y:"));
-      lcd.print(mlxHotspotY);
+      if (mlxReady) {
+        lcd.print(F("X:"));
+        lcd.print(mlxHotspotX);
+        lcd.print(F(" Y:"));
+        lcd.print(mlxHotspotY);
+      } else {
+        lcd.print(F("NOT DETECTED"));
+      }
       break;
   }
   lcdScreenIndex = (lcdScreenIndex + 1) % 4;
 }
 
 void printStatus() {
-  Serial.print(F("Sensors -> Hotspot: "));
-  Serial.print(mlxHotspotTempC, 1);
-  Serial.print(F("C | Ambient: "));
-  Serial.print(dhtTemperatureC, 1);
-  Serial.print(F("C | Humidity: "));
-  Serial.print(dhtHumidityPct, 1);
-  Serial.print(F("% | Current: "));
+  Serial.print(F("Sensors -> MLX: "));
+  Serial.print(mlxReady ? String(mlxHotspotTempC, 1) + "C" : "OFFLINE");
+  Serial.print(F(" | DHT: "));
+  Serial.print(dhtReady ? String(dhtTemperatureC, 1) + "C " + String(dhtHumidityPct, 0) + "%" : "OFFLINE");
+  Serial.print(F(" | Current: "));
   Serial.print(acsCurrentA, 2);
   Serial.println(F("A"));
 }

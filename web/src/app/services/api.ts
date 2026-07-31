@@ -10,10 +10,16 @@ import {
 
 // Central ESP32 Gateway Base Endpoint
 export const ESP32_DEFAULT_IP = "192.168.1.48";
-let activeEndpoint = `http://${ESP32_DEFAULT_IP}/api`;
+let activeIp = ESP32_DEFAULT_IP;
+let activeEndpoint = `http://${activeIp}/api`;
 
 export function setApiEndpoint(ip: string) {
-  activeEndpoint = `http://${ip}/api`;
+  activeIp = ip.trim();
+  activeEndpoint = `http://${activeIp}/api`;
+}
+
+export function getActiveIp(): string {
+  return activeIp;
 }
 
 // Default Safe Telemetry Objects (Guarantees zero UI crashes on sensor disconnects)
@@ -81,15 +87,28 @@ export class ApiService {
 
         if (response.ok) {
           const raw = await response.json();
-          const validHotspot = typeof raw.hotspotTemp === "number" && !isNaN(raw.hotspotTemp);
-          const validAmbient = typeof raw.ambientTemp === "number" && !isNaN(raw.ambientTemp);
-          const validCurrent = typeof raw.lineCurrent === "number" && !isNaN(raw.lineCurrent);
+          const validHotspot =
+            raw.mlxConnected !== false &&
+            typeof raw.hotspotTemp === "number" &&
+            !isNaN(raw.hotspotTemp) &&
+            raw.hotspotTemp !== -999.0;
+
+          const validAmbient =
+            raw.dhtConnected !== false &&
+            typeof raw.ambientTemp === "number" &&
+            !isNaN(raw.ambientTemp) &&
+            raw.ambientTemp !== -999.0;
+
+          const validCurrent =
+            raw.acsConnected !== false &&
+            typeof raw.lineCurrent === "number" &&
+            !isNaN(raw.lineCurrent);
 
           return {
             metrics: {
               hotspotTemp: validHotspot ? raw.hotspotTemp : SAFE_SENSOR_DEFAULTS.hotspotTemp,
               ambientTemp: validAmbient ? raw.ambientTemp : SAFE_SENSOR_DEFAULTS.ambientTemp,
-              humidity: typeof raw.humidity === "number" && !isNaN(raw.humidity) ? raw.humidity : SAFE_SENSOR_DEFAULTS.humidity,
+              humidity: validAmbient && typeof raw.humidity === "number" ? raw.humidity : SAFE_SENSOR_DEFAULTS.humidity,
               lineCurrent: validCurrent ? raw.lineCurrent : SAFE_SENSOR_DEFAULTS.lineCurrent,
               timestamp: raw.timestamp || new Date().toLocaleTimeString(),
             },
