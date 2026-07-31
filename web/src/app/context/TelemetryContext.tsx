@@ -71,7 +71,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     toast.success(`Switched to ${newMode.toUpperCase()} Mode`, {
       description:
         newMode === "live"
-          ? "Polling ESP32 Gateway Node (http://192.168.4.1/api)"
+          ? `Polling ESP32 Gateway Node (http://${ApiService.getApiIp()}/api)`
           : "Streaming high-precision simulated telemetry feed",
     });
   };

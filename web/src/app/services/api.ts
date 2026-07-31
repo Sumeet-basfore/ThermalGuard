@@ -10,17 +10,37 @@ import {
 
 // Central ESP32 Gateway Base Endpoint (Defaults to 192.168.4.1 for ThermoGuard_AP SoftAP)
 export const ESP32_DEFAULT_IP = "192.168.4.1";
-let activeIp = ESP32_DEFAULT_IP;
+
+function getInitialIp(): string {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("TG_GATEWAY_IP");
+    if (saved && saved.trim()) return saved.trim();
+  }
+  return ESP32_DEFAULT_IP;
+}
+
+let activeIp = getInitialIp();
 let activeEndpoint = `http://${activeIp}/api`;
 
 export function setApiEndpoint(ip: string) {
   activeIp = ip.trim();
   activeEndpoint = `http://${activeIp}/api`;
+  if (typeof window !== "undefined") {
+    localStorage.setItem("TG_GATEWAY_IP", activeIp);
+  }
 }
 
 export function getApiIp(): string {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("TG_GATEWAY_IP");
+    if (saved && saved.trim()) {
+      activeIp = saved.trim();
+      activeEndpoint = `http://${activeIp}/api`;
+    }
+  }
   return activeIp;
 }
+
 
 // Default Safe Telemetry Objects (Guarantees zero UI crashes on sensor disconnects)
 export const SAFE_SENSOR_DEFAULTS: SensorMetrics = {
