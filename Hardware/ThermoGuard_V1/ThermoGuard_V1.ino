@@ -280,6 +280,9 @@ void setup() {
   analogSetPinAttenuation(PIN_ACS712, ADC_11db);
 
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+  Wire.setClock(100000); // 100kHz stable bus clock
+  Wire.setTimeOut(1000); // 1000ms timeout protection against bus freeze
+
   initLCD();
   showBootScreen();
 
@@ -349,13 +352,13 @@ void loop() {
 // SECTION 11: SENSOR READERS & INTERLOCKS
 // ============================================================
 void initSensors() {
-  Wire.setClock(400000); // 400kHz fast I2C mode for MLX90640
+  Wire.setClock(100000);
   if (mlx.begin(MLX90640_I2CADDR_DEFAULT, &Wire)) {
     mlx.setMode(MLX90640_CHESS);
     mlx.setResolution(MLX90640_ADC_18BIT);
-    mlx.setRefreshRate(MLX90640_8_HZ);
+    mlx.setRefreshRate(MLX90640_4_HZ); // Relaxed refresh rate for shared I2C stability
     mlxReady = true;
-    Serial.println(F("MLX90640.......OK (8 FPS)"));
+    Serial.println(F("MLX90640.......OK (4 FPS)"));
   } else {
     mlxReady = false;
     Serial.println(F("MLX90640.......FAILED (Check I2C Address 0x33 or SDA/SCL Wiring)"));
@@ -392,7 +395,7 @@ void showBootScreen() {
 
 void readMLX() {
   if (!mlxReady) return;
-  Wire.setClock(400000); // Switch to 400kHz for high-speed MLX90640 frame read
+  Wire.setClock(100000); // Stable 100kHz bus speed
   if (mlx.getFrame(mlxFrame) != 0) return;
 
   float minT = mlxFrame[0];
