@@ -198,18 +198,18 @@ export class ApiService {
       return SAFE_THERMAL_DEFAULTS;
     }
 
-    // Demo Mode Simulation - Dynamic Hotspot Orbit
-    const time = Date.now() / 2000;
+    // Demo Mode Simulation: Smooth orbital motion trajectory across 32x24 spatial grid
+    const time = Date.now() / 1000.0;
+    const hotX = Math.round(16 + 11 * Math.cos(time * 0.8));
+    const hotY = Math.round(12 + 7 * Math.sin(time * 0.6));
     const noise = (Math.random() - 0.5) * 0.4;
-    const dynX = Math.round(16 + Math.sin(time) * 10);
-    const dynY = Math.round(12 + Math.cos(time * 0.8) * 8);
 
     return {
       minTemp: 22.1,
       maxTemp: Number((42.8 + noise).toFixed(1)),
       avgTemp: 29.6,
-      hotspotX: dynX,
-      hotspotY: dynY,
+      hotspotX: Math.max(2, Math.min(30, hotX)),
+      hotspotY: Math.max(2, Math.min(22, hotY)),
       fps: 8.0,
       pixels: new Array(768).fill(25.0),
     };

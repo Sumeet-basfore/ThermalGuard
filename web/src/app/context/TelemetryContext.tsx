@@ -139,10 +139,10 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Telemetry Polling Loop (2000ms)
+  // High-frequency Telemetry Stream Loop (500ms / 2 FPS)
   useEffect(() => {
     refreshTelemetry();
-    const interval = setInterval(refreshTelemetry, 2000);
+    const interval = setInterval(refreshTelemetry, 500);
     return () => clearInterval(interval);
   }, [mode, isOnline]);
 
