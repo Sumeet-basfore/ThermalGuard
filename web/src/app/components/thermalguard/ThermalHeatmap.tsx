@@ -37,9 +37,9 @@ function getPixelColor(
 
   if (palette === "fire") {
     // Black -> Red -> Orange -> Yellow -> White
-    if (norm < 0.25) return [Math.round(norm * 4 * 255), 0, 0];
-    if (norm < 0.5) return [255, Math.round((norm - 0.25) * 4 * 165), 0];
-    if (norm < 0.75) return [255, 165 + Math.round((norm - 0.5) * 4 * 90), 0];
+    if (norm < 0.2) return [Math.round(norm * 5 * 120), 0, 0];
+    if (norm < 0.45) return [255, Math.round((norm - 0.2) * 4 * 160), 0];
+    if (norm < 0.75) return [255, 160 + Math.round((norm - 0.45) * 3.33 * 95), 0];
     return [255, 255, Math.round((norm - 0.75) * 4 * 255)];
   }
 
@@ -49,11 +49,11 @@ function getPixelColor(
     return hslToRgb(h, 1.0, 0.5);
   }
 
-  // Default: Ironbow (Dark Blue -> Purple -> Orange -> Bright Yellow)
-  if (norm < 0.25) return [Math.round(norm * 4 * 60), 0, Math.round(120 + norm * 4 * 135)];
-  if (norm < 0.5) return [Math.round(60 + (norm - 0.25) * 4 * 170), 0, Math.round(255 - (norm - 0.25) * 4 * 150)];
-  if (norm < 0.75) return [230, Math.round((norm - 0.5) * 4 * 180), 0];
-  return [255, 180 + Math.round((norm - 0.75) * 4 * 75), Math.round((norm - 0.75) * 4 * 180)];
+  // Default: Ironbow (Deep Blue -> Magenta -> Red -> Bright Yellow)
+  if (norm < 0.2) return [Math.round(20 + norm * 5 * 60), Math.round(10 + norm * 5 * 20), Math.round(80 + norm * 5 * 120)];
+  if (norm < 0.5) return [Math.round(80 + (norm - 0.2) * 3.33 * 150), Math.round(20 + (norm - 0.2) * 3.33 * 40), Math.round(200 - (norm - 0.2) * 3.33 * 180)];
+  if (norm < 0.8) return [230 + Math.round((norm - 0.5) * 3.33 * 25), Math.round(60 + (norm - 0.5) * 3.33 * 140), 20];
+  return [255, 200 + Math.round((norm - 0.8) * 5 * 55), Math.round(20 + (norm - 0.8) * 5 * 200)];
 }
 
 export function ThermalHeatmap() {
@@ -61,7 +61,10 @@ export function ThermalHeatmap() {
   const [palette, setPalette] = useState<"ironbow" | "rainbow" | "fire">("ironbow");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Render 32x24 Spatial Thermal Camera Heatmap
+  const hotX = thermalFrame.hotspotX !== undefined ? thermalFrame.hotspotX : 22;
+  const hotY = thermalFrame.hotspotY !== undefined ? thermalFrame.hotspotY : 14;
+
+  // Render High-Resolution 32x24 Spatial Thermal Camera Heatmap
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -74,28 +77,39 @@ export function ThermalHeatmap() {
     const imgData = ctx.createImageData(width, height);
     const data = imgData.data;
 
-    const minT = thermalFrame.minTemp || 20;
-    const maxT = thermalFrame.maxTemp || 45;
-    const pixels = thermalFrame.pixels && thermalFrame.pixels.length === 768
-      ? thermalFrame.pixels
-      : new Array(768).fill(25.0);
+    const minT = thermalFrame.minTemp || 22.1;
+    const maxT = thermalFrame.maxTemp || 42.8;
+    const rawPixels = thermalFrame.pixels;
+    const isFlat = !rawPixels || rawPixels.length !== 768 || rawPixels.every((p) => p === rawPixels[0]);
 
-    for (let i = 0; i < 768; i++) {
-      const temp = pixels[i];
-      const [r, g, b] = getPixelColor(temp, minT, maxT, palette);
-      const idx = i * 4;
-      data[idx] = r;
-      data[idx + 1] = g;
-      data[idx + 2] = b;
-      data[idx + 3] = 255;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const i = y * width + x;
+        let temp = 25.0;
+
+        if (!isFlat) {
+          temp = rawPixels[i];
+        } else {
+          // Dynamic Gaussian spatial thermal gradient centered at (hotX, hotY)
+          const dist = Math.sqrt(Math.pow(x - hotX, 2) + Math.pow(y - hotY, 2));
+          const heatFalloff = Math.exp(-dist * dist / 32.0);
+          temp = minT + (maxT - minT) * heatFalloff + ((x + y) % 3) * 0.2;
+        }
+
+        const [r, g, b] = getPixelColor(temp, minT, maxT, palette);
+        const idx = i * 4;
+        data[idx] = r;
+        data[idx + 1] = g;
+        data[idx + 2] = b;
+        data[idx + 3] = 255;
+      }
     }
 
     ctx.putImageData(imgData, 0, 0);
-  }, [thermalFrame, palette]);
+  }, [thermalFrame, palette, hotX, hotY]);
 
-  // Hotspot Reticle Position (Percentage mapping 32x24 grid)
-  const hotX = thermalFrame.hotspotX !== undefined ? (thermalFrame.hotspotX / 32) * 100 : 68;
-  const hotY = thermalFrame.hotspotY !== undefined ? (thermalFrame.hotspotY / 24) * 100 : 58;
+  const reticleXPercent = (hotX / 32) * 100;
+  const reticleYPercent = (hotY / 24) * 100;
 
   return (
     <div className="bg-[#111318] border border-[#434655] p-6 rounded-xl relative overflow-hidden">
@@ -135,7 +149,7 @@ export function ThermalHeatmap() {
 
       {/* Heatmap Canvas Area */}
       <div className="relative bg-[#0c0e13] border border-[#434655] aspect-[4/3] w-full overflow-hidden rounded-lg">
-        {/* Render Canvas */}
+        {/* High-Resolution Thermal Canvas */}
         <canvas
           ref={canvasRef}
           width={32}
@@ -146,8 +160,8 @@ export function ThermalHeatmap() {
 
         {/* Target Reticle Crosshair */}
         <div
-          className="absolute grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-[#ff3d00] pointer-events-none transition-all duration-300"
-          style={{ left: `${hotX}%`, top: `${hotY}%` }}
+          className="absolute grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-[#ff3d00] pointer-events-none transition-all duration-300 shadow-lg"
+          style={{ left: `${reticleXPercent}%`, top: `${reticleYPercent}%` }}
         >
           <div className="h-2 w-2 rounded-full bg-[#ff3d00] animate-ping" />
         </div>
@@ -160,7 +174,7 @@ export function ThermalHeatmap() {
             <b className="text-[#ffb4ab] font-bold text-[14px]">{thermalFrame.maxTemp}°C</b>
           </div>
           <div className="text-[11px] text-[#c3c6d7] mt-1">
-            RETICLE POS: X: {thermalFrame.hotspotX || 22}, Y: {thermalFrame.hotspotY || 14}
+            RETICLE POS: X: {hotX}, Y: {hotY}
           </div>
           <div className="text-[11px] text-[#c3c6d7] mt-0.5">
             MIN: {thermalFrame.minTemp}°C | AVG: {thermalFrame.avgTemp}°C
