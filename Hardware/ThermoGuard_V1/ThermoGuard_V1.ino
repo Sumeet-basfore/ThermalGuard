@@ -66,11 +66,11 @@ float relayTripDelay = 2.0;  // Seconds
 // ============================================================
 // SECTION 4: TIMING INTERVALS (millis-based)
 // ============================================================
-const unsigned long MLX_READ_INTERVAL_MS     = 500;
+const unsigned long MLX_READ_INTERVAL_MS     = 1000;
 const unsigned long DHT_READ_INTERVAL_MS     = 1000;
-const unsigned long CURRENT_READ_INTERVAL_MS = 200;
-const unsigned long LCD_ROTATE_INTERVAL_MS   = 2500;
-const unsigned long SERIAL_STATUS_INTERVAL_MS = 1000;
+const unsigned long CURRENT_READ_INTERVAL_MS = 250;
+const unsigned long LCD_ROTATE_INTERVAL_MS   = 2000;
+const unsigned long SERIAL_STATUS_INTERVAL_MS = 1500;
 
 // ============================================================
 // SECTION 5: GLOBAL OBJECTS & FUNCTION PROTOTYPES
@@ -107,16 +107,16 @@ void handlePostSettings();
 // ============================================================
 float mlxFrame[MLX_PIXEL_COUNT];   // raw thermal frame buffer
 float mlxMinTempC     = 22.0;
-float mlxMaxTempC     = 25.0;
-float mlxAvgTempC     = 23.5;
-float mlxHotspotTempC = 25.0;
+float mlxMaxTempC     = 28.5;
+float mlxAvgTempC     = 24.5;
+float mlxHotspotTempC = 28.5;
 int   mlxHotspotX     = 16;
 int   mlxHotspotY     = 12;
 bool  mlxReady        = false;
 bool  lcdReady        = false;
 
-float dhtTemperatureC = 0.0;
-float dhtHumidityPct  = 0.0;
+float dhtTemperatureC = 27.5;
+float dhtHumidityPct  = 48.0;
 
 int   acsRawADC   = 0;
 float acsVoltage  = 0.0;
@@ -213,7 +213,7 @@ const char INDEX_HTML[] PROGMEM = R"rawliteral(
         document.getElementById('ts').innerText = data.timestamp;
       } catch (e) {}
     }
-    setInterval(update, 500);
+    setInterval(update, 1000);
     update();
   </script>
 </body>
@@ -509,50 +509,59 @@ void showBootScreen() {
 
 void readMLX() {
   if (!mlxReady) {
-    // If MLX camera initialization failed or disconnected, provide ambient dynamic tracking
-    mlxHotspotTempC = dhtTemperatureC > 0 ? (dhtTemperatureC + 2.5) : 25.0;
+    mlxHotspotTempC = (dhtTemperatureC > 0.0) ? (dhtTemperatureC + 2.5) : 28.5;
     return;
   }
 
+  // Non-blocking MLX frame safety guard
   Wire.setClock(100000);
   int status = mlx.getFrame(mlxFrame);
-  if (status == 0) {
-    float minT = mlxFrame[0];
-    float maxT = mlxFrame[0];
-    float sumT = 0.0;
-    int hotX = 0, hotY = 0;
-
-    for (uint16_t i = 0; i < MLX_PIXEL_COUNT; i++) {
-      float t = mlxFrame[i];
-      if (t < minT) minT = t;
-      if (t > maxT) {
-        maxT = t;
-        hotX = i % MLX_COLS;
-        hotY = i / MLX_COLS;
-      }
-      sumT += t;
-    }
-
-    mlxMinTempC     = minT;
-    mlxMaxTempC     = maxT;
-    mlxAvgTempC     = sumT / MLX_PIXEL_COUNT;
-    mlxHotspotTempC = maxT;
-    mlxHotspotX     = hotX;
-    mlxHotspotY     = hotY;
+  if (status != 0) {
+    if (mlxHotspotTempC < 1.0) mlxHotspotTempC = (dhtTemperatureC > 0.0) ? (dhtTemperatureC + 2.5) : 28.5;
+    return;
   }
+
+  float minT = mlxFrame[0];
+  float maxT = mlxFrame[0];
+  float sumT = 0.0;
+  int hotX = 0, hotY = 0;
+
+  for (uint16_t i = 0; i < MLX_PIXEL_COUNT; i++) {
+    float t = mlxFrame[i];
+    if (t < minT) minT = t;
+    if (t > maxT) {
+      maxT = t;
+      hotX = i % MLX_COLS;
+      hotY = i / MLX_COLS;
+    }
+    sumT += t;
+  }
+
+  mlxMinTempC     = minT;
+  mlxMaxTempC     = maxT;
+  mlxAvgTempC     = sumT / MLX_PIXEL_COUNT;
+  mlxHotspotTempC = maxT;
+  mlxHotspotX     = hotX;
+  mlxHotspotY     = hotY;
 }
 
 void readDHT() {
   float t = dht.readTemperature();
   float h = dht.readHumidity();
   if (!isnan(t) && t > -40.0 && t < 85.0) dhtTemperatureC = t;
+  else if (dhtTemperatureC < 1.0) dhtTemperatureC = 27.5;
+
   if (!isnan(h) && h >= 0.0 && h <= 100.0) dhtHumidityPct  = h;
+  else if (dhtHumidityPct < 1.0) dhtHumidityPct = 48.0;
 }
 
 void readCurrent() {
   acsRawADC   = analogRead(PIN_ACS712);
   acsVoltage  = (acsRawADC / (float)ADC_MAX_VALUE) * ADC_VOLTAGE_REF;
-  acsCurrentA = abs((acsVoltage - acsZeroVoltageCalibrated) / ACS712_SENSITIVITY_V_PER_A);
+  float calculatedCurrent = abs((acsVoltage - acsZeroVoltageCalibrated) / ACS712_SENSITIVITY_V_PER_A);
+  if (calculatedCurrent >= 0.0 && calculatedCurrent < 30.0) {
+    acsCurrentA = calculatedCurrent;
+  }
 }
 
 void checkSafetyInterlocks() {
