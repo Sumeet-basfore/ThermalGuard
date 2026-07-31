@@ -109,10 +109,10 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
         setFailedPollCount((prev) => {
           const next = prev + 1;
           if (next >= 3) {
-            toast.error("ESP32 Gateway Timeout / Mixed Content Block", {
+            toast.warning("ESP32 Offline or Blocked by Browser", {
               description:
-                "Browser blocked HTTP call to http://192.168.4.1 or device is offline. Auto-engaged Demo Mode.",
-              duration: 6000,
+                "To connect Live on Mobile/HTTPS: Allow 'Insecure Content' in Chrome site settings OR open http://192.168.4.1 directly on Wi-Fi.",
+              duration: 7000,
             });
             setModeState("demo");
             ApiService.setMode("demo");
@@ -121,6 +121,9 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
           return next;
         });
         setHasError(true);
+      } else if (mode === "demo") {
+        setFailedPollCount(0);
+        setHasError(false);
       } else {
         setFailedPollCount(0);
         setHasError(false);
