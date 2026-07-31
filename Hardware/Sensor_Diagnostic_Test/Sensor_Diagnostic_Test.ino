@@ -4,9 +4,8 @@
   ============================================================
   Board   : ESP32 DevKit V1 (ESP-WROOM-32)
   Baud    : 115200
-  Purpose : Non-blocking self-test diagnostic tool with I2C hardware
-            timeout protection to verify MLX90640, DHT11, ACS712,
-            LCD, Relay, and Buzzer simultaneously without freezing.
+  Purpose : Non-blocking self-test diagnostic tool with step-by-step
+            Serial checkpoint logging and dual I2C clock switching.
   ============================================================
 */
 
@@ -64,10 +63,10 @@ void setup() {
   analogSetPinAttenuation(PIN_ACS712, ADC_11db);
   Serial.println(F("[2/5] ADC Pin 34 (ACS712 Current Sensor) Initialized."));
 
-  // 3. I2C Bus Setup & Timeout Protection
+  // 3. I2C Bus Setup & Scanner
   Wire.begin(PIN_SDA, PIN_SCL);
-  Wire.setClock(100000);   // Standard 100kHz bus speed for maximum I2C stability
-  Wire.setTimeOut(1000);   // Set 1000ms I2C timeout to prevent bus freeze
+  Wire.setClock(100000);   // 100kHz standard mode for scanning & LCD
+  Wire.setTimeOut(1000);   // 1000ms hardware timeout guard
   Serial.println(F("[3/5] Scanning I2C Bus (SDA: GPIO 21, SCL: GPIO 22)..."));
 
   byte error, address;
@@ -112,10 +111,11 @@ void setup() {
 
   // 4. MLX90640 Thermal Camera Setup
   Serial.println(F("[4/5] Initializing MLX90640 Thermal Sensor..."));
+  Wire.setClock(400000); // MLX90640 requires 400kHz fast mode for bulk 1668-byte frame transfers
   if (mlx.begin(MLX90640_I2CADDR_DEFAULT, &Wire)) {
     mlx.setMode(MLX90640_CHESS);
     mlx.setResolution(MLX90640_ADC_18BIT);
-    mlx.setRefreshRate(MLX90640_2_HZ); // 2Hz for robust frame acquisition over shared bus
+    mlx.setRefreshRate(MLX90640_2_HZ); // 2Hz refresh rate for stable frame capture
     mlxOk = true;
     Serial.println(F("      -> MLX90640 Thermal Sensor Initialized Successfully (2 FPS)."));
   } else {
@@ -144,12 +144,13 @@ void setup() {
 void loop() {
   Serial.println(F("--------------------------------------------------"));
 
-  // A. MLX90640 Reading Test with Timeout Protection
+  // A. MLX90640 Reading Test
   float maxTemp = 25.0, minTemp = 20.0, avgTemp = 22.5;
   int hotX = 16, hotY = 12;
 
   if (mlxOk) {
-    Wire.setClock(100000); // Maintain 100kHz bus clock to prevent locking LCD controller
+    Serial.println(F("[STEP A] Reading MLX90640 768-pixel thermal frame (400kHz I2C)..."));
+    Wire.setClock(400000); // 400kHz required for bulk frame data read
     int status = mlx.getFrame(mlxFrame);
     if (status == 0) {
       minTemp = mlxFrame[0];
@@ -167,7 +168,7 @@ void loop() {
       }
       avgTemp = sum / 768.0;
 
-      Serial.print(F("[MLX90640 32x24] Max Hotspot: "));
+      Serial.print(F(" -> [MLX90640] Max Hotspot: "));
       Serial.print(maxTemp, 1);
       Serial.print(F("°C | Min: "));
       Serial.print(minTemp, 1);
@@ -179,33 +180,35 @@ void loop() {
       Serial.print(hotY);
       Serial.println(F(") -> OK"));
     } else {
-      Serial.print(F("[MLX90640 32x24] Frame Read Timeout/Error code: "));
+      Serial.print(F(" -> [MLX90640] Frame read status code: "));
       Serial.println(status);
     }
   } else {
-    Serial.println(F("[MLX90640 32x24] OFFLINE (Check I2C 0x33)"));
+    Serial.println(F("[STEP A] MLX90640 OFFLINE (Check I2C 0x33)"));
   }
 
   // B. DHT11 Reading Test
+  Serial.println(F("[STEP B] Reading DHT11 climate sensor..."));
   float ambTemp = dht.readTemperature();
   float humidity = dht.readHumidity();
 
   if (!isnan(ambTemp) && !isnan(humidity)) {
-    Serial.print(F("[DHT11 Sensor]  Ambient Temp: "));
+    Serial.print(F(" -> [DHT11]  Ambient Temp: "));
     Serial.print(ambTemp, 1);
     Serial.print(F("°C | Humidity: "));
     Serial.print(humidity, 1);
     Serial.println(F("% RH -> OK"));
   } else {
-    Serial.println(F("[DHT11 Sensor]  READ ERROR (Check GPIO 4)"));
+    Serial.println(F(" -> [DHT11]  READ ERROR (Check GPIO 4)"));
   }
 
   // C. ACS712 Current Reading Test
+  Serial.println(F("[STEP C] Reading ACS712 current sensor..."));
   int rawAdc = analogRead(PIN_ACS712);
   float voltage = (rawAdc / 4095.0) * 3.3;
   float currentA = abs((voltage - 1.65) / 0.185);
 
-  Serial.print(F("[ACS712 Current] ADC Raw: "));
+  Serial.print(F(" -> [ACS712] ADC Raw: "));
   Serial.print(rawAdc);
   Serial.print(F(" | Voltage: "));
   Serial.print(voltage, 2);
@@ -215,7 +218,8 @@ void loop() {
 
   // D. Update LCD Screen Test
   if (lcdOk) {
-    Wire.setClock(100000);
+    Serial.println(F("[STEP D] Updating 16x2 LCD display (100kHz I2C)..."));
+    Wire.setClock(100000); // Switch to 100kHz standard mode for LCD backpack
     activeLcd->clear();
     activeLcd->setCursor(0, 0);
     activeLcd->print(F("H:"));
