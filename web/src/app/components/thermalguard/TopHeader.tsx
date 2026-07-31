@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { getApiIp, setApiEndpoint } from "../../services/api";
 import { useTelemetry } from "../../context/TelemetryContext";
 import { PresentationView } from "./PresentationView";
 
@@ -9,8 +10,10 @@ export interface TopHeaderProps {
 }
 
 export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
-  const { mode, setMode, isOnline, hasError } = useTelemetry();
+  const { mode, setMode, isOnline, hasError, refreshTelemetry } = useTelemetry();
   const [isPresentation, setIsPresentation] = useState(false);
+  const [showIpModal, setShowIpModal] = useState(false);
+  const [gatewayIp, setGatewayIp] = useState(getApiIp());
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -20,6 +23,7 @@ export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
         }
       } else if (e.key === "Escape") {
         setIsPresentation(false);
+        setShowIpModal(false);
       }
     };
 
@@ -31,6 +35,18 @@ export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
     toast.info("Sensor Diagnostics", {
       description: "ESP32 Node polling health check OK. I2C 0x33, ADC 34, GPIO 4 active.",
     });
+  };
+
+  const handleSaveIp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setApiEndpoint(gatewayIp);
+    setShowIpModal(false);
+    toast.success(`ESP32 Gateway IP Updated`, {
+      description: `Targeting http://${gatewayIp}/api`,
+    });
+    if (mode === "live") {
+      refreshTelemetry();
+    }
   };
 
   return (
@@ -48,14 +64,14 @@ export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
             {pageName}
           </h2>
           <div className="h-4 w-[1px] bg-[#434655] hidden sm:block"></div>
-          <div className="flex items-center gap-2 px-2 py-1 bg-[#2563eb]/10 rounded border border-[#2563eb]/20">
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-[#2563eb]/10 rounded border border-[#2563eb]/20">
             <span
               className={`w-2 h-2 rounded-full ${
                 !isOnline || hasError ? "bg-[#ffb4ab]" : "bg-[#2563eb] animate-pulse"
               }`}
             ></span>
             <span className="font-[Inter] text-[11px] leading-[16px] tracking-[0.05em] font-bold text-[#b4c5ff]">
-              {!isOnline || hasError ? "ESP32 OFFLINE" : "ESP32 ONLINE"}
+              {!isOnline || hasError ? "ESP32 OFFLINE" : `ESP32 ONLINE (${getApiIp()})`}
             </span>
           </div>
         </div>
@@ -63,6 +79,13 @@ export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
         <div className="flex items-center gap-4">
           {/* Action Icons */}
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowIpModal(true)}
+              title="Configure ESP32 IP Address"
+              className="material-symbols-outlined text-[#c3c6d7] hover:text-[#b4c5ff] transition-colors text-[20px]"
+            >
+              settings_remote
+            </button>
             <button
               onClick={handleSensorCheck}
               title="Sensor Diagnostics"
@@ -76,13 +99,6 @@ export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
               className="material-symbols-outlined text-[#c3c6d7] hover:text-[#b4c5ff] transition-colors text-[20px]"
             >
               present_to_all
-            </button>
-            <button
-              onClick={() => setMode(mode === "live" ? "demo" : "live")}
-              title={`Switch Mode (Current: ${mode.toUpperCase()})`}
-              className="material-symbols-outlined text-[#c3c6d7] hover:text-[#b4c5ff] transition-colors text-[20px]"
-            >
-              toggle_on
             </button>
           </div>
 
@@ -113,6 +129,61 @@ export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
           </div>
         </div>
       </header>
+
+      {/* ESP32 IP Configure Modal */}
+      {showIpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#181a20] border border-[#434655] rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-[Inter] text-[16px] font-bold text-[#e2e2e9] flex items-center gap-2">
+                <span className="material-symbols-outlined text-[#b4c5ff]">settings_remote</span>
+                ESP32 Gateway Endpoint Config
+              </h3>
+              <button
+                onClick={() => setShowIpModal(false)}
+                className="text-[#c3c6d7] hover:text-[#e2e2e9]"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveIp} className="space-y-4">
+              <div>
+                <label className="block font-[Inter] text-[12px] font-medium text-[#c3c6d7] mb-1">
+                  ESP32 Gateway IP Address or Hostname:
+                </label>
+                <input
+                  type="text"
+                  value={gatewayIp}
+                  onChange={(e) => setGatewayIp(e.target.value)}
+                  placeholder="192.168.4.1"
+                  className="w-full bg-[#0c0e13] border border-[#434655] rounded px-3 py-2 text-[#e2e2e9] font-['JetBrains_Mono'] text-[13px] focus:outline-none focus:border-[#2563eb]"
+                  required
+                />
+                <p className="mt-1 text-[11px] text-[#c3c6d7]">
+                  Default ThermoGuard_AP SoftAP IP is <b>192.168.4.1</b>. If using a home router, enter the assigned IP address.
+                </p>
+              </div>
+
+              <div className="pt-3 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowIpModal(false)}
+                  className="px-4 py-2 border border-[#434655] rounded text-[#e2e2e9] font-[Inter] text-[12px] hover:bg-[#282a30]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#2563eb] rounded text-[#eeefff] font-[Inter] text-[12px] font-bold hover:brightness-110"
+                >
+                  Save & Connect
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Presentation Mode Fullscreen Overlay */}
       {isPresentation && (
