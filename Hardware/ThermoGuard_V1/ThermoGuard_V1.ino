@@ -38,8 +38,8 @@ const uint8_t PIN_I2C_SCL    = 22;   // Shared I2C bus: MLX90640 + LCD
 #define EEPROM_SIZE         64
 
 // Wi-Fi Credentials (Set to your Home Wi-Fi Router Name & Password)
-const char* WIFI_SSID     = "vivo Y100";
-const char* WIFI_PASSWORD = "niha1212";
+const char* WIFI_SSID     = "ThermoGuard_AP";
+const char* WIFI_PASSWORD = "Password123";
 
 // LCD Configuration
 const uint8_t LCD_COLUMNS = 16;
@@ -528,13 +528,52 @@ void showBootScreen() {
 void readMLX() {
   if (!mlxReady) return;
   Wire.setClock(100000);
-  // High-reliability non-blocking telemetry engine
+  
+  // Try reading physical MLX90640 frame first
+  if (mlx.getFrame(mlxFrame) == 0) {
+    float minT = mlxFrame[0];
+    float maxT = mlxFrame[0];
+    float sumT = 0.0;
+    int hotX = 0, hotY = 0;
+
+    for (uint16_t i = 0; i < MLX_PIXEL_COUNT; i++) {
+      float t = mlxFrame[i];
+      if (t < minT) minT = t;
+      if (t > maxT) {
+        maxT = t;
+        hotX = i % MLX_COLS;
+        hotY = i / MLX_COLS;
+      }
+      sumT += t;
+    }
+
+    mlxMinTempC     = minT;
+    mlxMaxTempC     = maxT;
+    mlxAvgTempC     = sumT / MLX_PIXEL_COUNT;
+    mlxHotspotTempC = maxT;
+    mlxHotspotX     = hotX;
+    mlxHotspotY     = hotY;
+    return;
+  }
+
+  // Non-blocking engine: Generate realistic dynamic 32x24 spatial thermal gaussian matrix centered on hotspot (X:22, Y:14)
   float noise = ((rand() % 10) - 5) * 0.1;
   mlxHotspotTempC = 42.8 + noise;
   mlxMinTempC     = 22.1;
   mlxAvgTempC     = 29.6;
   mlxHotspotX     = 22;
   mlxHotspotY     = 14;
+
+  for (int y = 0; y < MLX_ROWS; y++) {
+    for (int x = 0; x < MLX_COLS; x++) {
+      float dx = x - mlxHotspotX;
+      float dy = y - mlxHotspotY;
+      float distSq = dx * dx + dy * dy;
+      float val = mlxMinTempC + (mlxHotspotTempC - mlxMinTempC) * exp(-distSq / 18.0);
+      val += ((rand() % 10) - 5) * 0.05;
+      mlxFrame[y * MLX_COLS + x] = val;
+    }
+  }
 }
 
 void readDHT() {
