@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ApiService, SensorStatusState } from "../services/api";
 import {
@@ -19,14 +19,12 @@ interface TelemetryContextType {
   sensorStatus: SensorStatusState;
   thermalFrame: ThermalFrameData;
   systemHealth: SystemHealthMetrics;
+  tempHistory: number[];
+  currentHistory: number[];
   refreshTelemetry: () => Promise<void>;
 }
 
 const TelemetryContext = createContext<TelemetryContextType | undefined>(undefined);
-
-const FAIL_THRESHOLD = 5;           // Falls back to Demo after 5 consecutive failures (was 3)
-const BASE_POLL_INTERVAL_MS = 2000; // Normal polling cadence
-const MAX_BACKOFF_MS = 8000;        // Maximum backoff delay on repeated failures
 
 export function TelemetryProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<OperatingMode>("demo");
@@ -35,8 +33,10 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
   const [hasError, setHasError] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string>("Initializing...");
   const [failedPollCount, setFailedPollCount] = useState(0);
-  const failedCountRef = useRef(0); // Ref copy for accurate closure access in async callbacks
-  const backoffRef = useRef(BASE_POLL_INTERVAL_MS);
+
+  const MAX_HISTORY = 60;
+  const [tempHistory, setTempHistory] = useState<number[]>([41.2, 41.8, 42.0, 42.5, 42.8, 42.4, 42.8]);
+  const [currentHistory, setCurrentHistory] = useState<number[]>([7.8, 8.0, 8.1, 8.4, 8.2, 8.3, 8.2]);
 
   const [sensorMetrics, setSensorMetrics] = useState<SensorMetrics>({
     hotspotTemp: 42.8,
@@ -70,30 +70,38 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     storageUsage: 22,
   });
 
-  const setMode = (newMode: OperatingMode) => {
+  const setMode = async (newMode: OperatingMode) => {
     setModeState(newMode);
     ApiService.setMode(newMode);
-    failedCountRef.current = 0;
-    backoffRef.current = BASE_POLL_INTERVAL_MS;
     setFailedPollCount(0);
-    setHasError(false);
 
-    // Mixed content warning: HTTPS page cannot reach plain HTTP ESP32
-    if (newMode === "live" && ApiService.isMixedContentRisk()) {
-      toast.warning("⚠ Mixed Content Warning", {
-        description:
-          "This page is served over HTTPS. Browsers block plain HTTP requests to the ESP32. " +
-          "Open the dashboard via http:// instead, or use a local network proxy.",
-        duration: 8000,
+    if (newMode === "live") {
+      setIsConnecting(true);
+      const connStatus = await ApiService.testConnection();
+      setIsConnecting(false);
+
+      if (connStatus === "blocked") {
+        toast.error("Browser Blocked HTTP Call (Mixed Content)", {
+          description: `Accessing http://${ApiService.getApiIp()}/api from an HTTPS website was blocked by your browser. Open the ESP32 IP directly or run the app locally on HTTP.`,
+          duration: 9000,
+        });
+        setModeState("demo");
+        ApiService.setMode("demo");
+      } else if (connStatus === "offline") {
+        toast.warning("ESP32 Gateway Offline / Unreachable", {
+          description: `Could not reach http://${ApiService.getApiIp()}/api. Verify IP & Wi-Fi connection.`,
+          duration: 7000,
+        });
+      } else {
+        toast.success("ESP32 Gateway Connected", {
+          description: `Live streaming from http://${ApiService.getApiIp()}/api`,
+        });
+      }
+    } else {
+      toast.success("Switched to DEMO Mode", {
+        description: "Streaming high-precision simulated telemetry feed",
       });
     }
-
-    toast.success(`Switched to ${newMode.toUpperCase()} Mode`, {
-      description:
-        newMode === "live"
-          ? `Polling ESP32 Gateway Node (http://${ApiService.getApiIp()}/api)`
-          : "Streaming high-precision simulated telemetry feed",
-    });
   };
 
   useEffect(() => {
@@ -108,6 +116,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
+
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
@@ -117,10 +126,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
   const refreshTelemetry = async () => {
     if (!isOnline) return;
     setIsConnecting(true);
-
     try {
-      // Sequential fetch pattern: sensors first, then thermal (+200ms), then health (+400ms)
-      // This prevents the ESP32 single-socket HTTP server from getting overwhelmed
       const [{ metrics, statusState, success }, frame, health] = await Promise.all([
         ApiService.getSensors(),
         ApiService.getThermalFrame(),
@@ -128,38 +134,21 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
       ]);
 
       if (mode === "live" && !success) {
-        failedCountRef.current += 1;
-        const count = failedCountRef.current;
-
-        if (count >= FAIL_THRESHOLD) {
-          // After FAIL_THRESHOLD failures: auto-engage Demo Mode
-          toast.error("ESP32 Gateway Unreachable", {
-            description:
-              `${count} consecutive failures. Switching to Demo Mode. ` +
-              (ApiService.isMixedContentRisk()
-                ? "Likely cause: Mixed Content block (HTTPS → HTTP). Open via http://."
-                : "Check ESP32 power and Wi-Fi. Configure IP via the settings icon."),
-            duration: 8000,
-          });
-          setModeState("demo");
-          ApiService.setMode("demo");
-          failedCountRef.current = 0;
-          backoffRef.current = BASE_POLL_INTERVAL_MS;
-        } else {
-          // Progressive backoff: double delay up to MAX_BACKOFF_MS
-          backoffRef.current = Math.min(backoffRef.current * 1.5, MAX_BACKOFF_MS);
-          toast.warning(`ESP32 Reconnecting... (${count}/${FAIL_THRESHOLD})`, {
-            description: `Next retry in ${(backoffRef.current / 1000).toFixed(1)}s`,
-            duration: 3000,
-          });
-        }
-
-        setFailedPollCount(count);
+        setFailedPollCount((prev) => {
+          const next = prev + 1;
+          if (next >= 3) {
+            toast.error("ESP32 Gateway Connection Lost", {
+              description: `Could not poll http://${ApiService.getApiIp()}/api after 3 attempts. Auto-reverted to Demo Mode.`,
+              duration: 6000,
+            });
+            setModeState("demo");
+            ApiService.setMode("demo");
+            return 0;
+          }
+          return next;
+        });
         setHasError(true);
       } else {
-        // Success: reset counters and backoff
-        failedCountRef.current = 0;
-        backoffRef.current = BASE_POLL_INTERVAL_MS;
         setFailedPollCount(0);
         setHasError(false);
       }
@@ -169,6 +158,21 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
       setThermalFrame(frame);
       setSystemHealth(health);
       setLastSyncTime(new Date().toLocaleTimeString());
+
+      // Update rolling time-series data buffers for graphs
+      if (typeof metrics.hotspotTemp === "number" && !isNaN(metrics.hotspotTemp)) {
+        setTempHistory((prev) => {
+          const next = [...prev, metrics.hotspotTemp];
+          return next.length > MAX_HISTORY ? next.slice(-MAX_HISTORY) : next;
+        });
+      }
+
+      if (typeof metrics.lineCurrent === "number" && !isNaN(metrics.lineCurrent)) {
+        setCurrentHistory((prev) => {
+          const next = [...prev, metrics.lineCurrent];
+          return next.length > MAX_HISTORY ? next.slice(-MAX_HISTORY) : next;
+        });
+      }
     } catch (err) {
       console.warn("[TelemetryContext] Telemetry fetch unfulfilled, maintaining safe state", err);
       setHasError(true);
@@ -177,20 +181,11 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Adaptive polling loop with exponential backoff on failures
+  // Telemetry Polling Loop (2000ms)
   useEffect(() => {
     refreshTelemetry();
-    const scheduleNext = () => {
-      const delay = hasError && mode === "live" ? backoffRef.current : BASE_POLL_INTERVAL_MS;
-      const id = setTimeout(async () => {
-        await refreshTelemetry();
-        scheduleNext();
-      }, delay);
-      return id;
-    };
-    const id = scheduleNext();
-    return () => clearTimeout(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const interval = setInterval(refreshTelemetry, 2000);
+    return () => clearInterval(interval);
   }, [mode, isOnline]);
 
   return (
@@ -206,6 +201,8 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
         sensorStatus,
         thermalFrame,
         systemHealth,
+        tempHistory,
+        currentHistory,
         refreshTelemetry,
       }}
     >

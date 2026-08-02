@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { createBrowserRouter, Link, Outlet, useLocation } from "react-router";
 import { toast } from "sonner";
 
@@ -7,31 +7,7 @@ import { ApiService } from "./services/api";
 import { SidebarNav } from "./components/thermalguard/SidebarNav";
 import { TopHeader } from "./components/thermalguard/TopHeader";
 import { ThermalHeatmap } from "./components/thermalguard/ThermalHeatmap";
-
-// ─── Rolling buffer hook for live animated charts ─────────────────────────────
-// Maintains a fixed-length array of the last `maxPoints` readings.
-// Returns the buffer reference — stable across renders.
-function useRollingBuffer(value: number, maxPoints = 60) {
-  const buffer = useRef<number[]>([]);
-  useEffect(() => {
-    buffer.current = [...buffer.current, value].slice(-maxPoints);
-  }, [value, maxPoints]);
-  return buffer;
-}
-
-// Convert a rolling buffer to an SVG polyline `d` attribute string.
-// Maps buffer values into the SVG viewBox [0, 1000] × [0, 300].
-function buildPolyline(buf: number[], minVal: number, maxVal: number): string {
-  if (buf.length < 2) return "";
-  const range = maxVal - minVal || 1;
-  return buf
-    .map((v, i) => {
-      const x = (i / (buf.length - 1)) * 1000;
-      const y = 280 - ((v - minVal) / range) * 260;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" L ");
-}
+import { buildPolylinePoints } from "./services/chartUtils";
 
 const nav = [
   ["/", "dashboard", "Dashboard"],
@@ -56,7 +32,7 @@ function Shell() {
     "Dashboard";
 
   return (
-    <div className="flex h-screen bg-[#111318] font-[Inter] text-[#e2e2e9] overflow-hidden">
+    <div className="min-h-screen bg-[#111318] font-[Inter] text-[#e2e2e9] flex flex-col">
       <SidebarNav
         navItems={nav}
         secondaryNavItems={secondaryNav}
@@ -64,26 +40,27 @@ function Shell() {
         setOpen={setOpen}
       />
 
-      <main className="flex-1 flex flex-col h-full bg-[#111318] overflow-x-hidden overflow-y-auto">
+      <main className="lg:ml-[240px] flex-1 flex flex-col min-h-screen bg-[#111318] overflow-x-hidden">
         <TopHeader pageName={page} onOpenMobileMenu={() => setOpen(true)} />
 
-        <div className="flex-1 p-3 md:p-4 lg:p-6 overflow-y-auto">
+        <div className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <Outlet />
         </div>
 
-        {/* Responsive footer — compact on mobile */}
-        <footer className="bg-[#0c0e13] border-t border-[#434655] flex flex-wrap items-center justify-between gap-2 px-4 lg:px-6 py-1.5 font-['JetBrains_Mono'] text-[10px] text-[#c3c6d7] uppercase">
-          <div className="hidden sm:flex gap-4 items-center">
+        <footer className="min-h-8 py-1.5 sm:py-0 bg-[#0c0e13] border-t border-[#434655] flex flex-wrap items-center justify-between px-3 sm:px-6 font-['JetBrains_Mono'] text-[9px] sm:text-[10px] text-[#c3c6d7] uppercase gap-2">
+          <div className="flex gap-3 sm:gap-6 items-center flex-wrap">
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#b4c5ff]" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[#b4c5ff]"></span>
               <span>MTBF: 12,400 hrs</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#b4c5ff]" />
-              <span>FW: v2.4.1-STABLE</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-[#b4c5ff]"></span>
+              <span>Firmware: v2.4.1-STABLE</span>
             </div>
           </div>
-          <div>MODE: {mode.toUpperCase()} · LATENCY: 14ms</div>
+          <div>
+            LATENCY: 14ms | MODE: {mode.toUpperCase()}
+          </div>
         </footer>
       </main>
     </div>
@@ -94,32 +71,29 @@ function Shell() {
    1. DASHBOARD VIEW (operations_dashboard/code.html)
    ========================================================================= */
 function Dashboard() {
-  const { sensorMetrics, mode } = useTelemetry();
+  const { sensorMetrics, mode, tempHistory } = useTelemetry();
   const [relayAuto, setRelayAuto] = useState(true);
   const [relayActive, setRelayActive] = useState(true);
   const [buzzerMuted, setBuzzerMuted] = useState(false);
-
-  // Rolling buffer for live temperature chart — 60 readings = 2 min window at 2s polling
-  const hotspotBuffer = useRollingBuffer(sensorMetrics.hotspotTemp, 60);
-  const ambientBuffer = useRollingBuffer(sensorMetrics.ambientTemp, 60);
-  const [, forceUpdate] = useState(0);
-  useEffect(() => { forceUpdate((n) => n + 1); }, [sensorMetrics.hotspotTemp]);
 
   const playWebAudioBeep = () => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(1046.5, ctx.currentTime); // 1046.5 Hz High C beep
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.2);
+
+      [0, 0.22, 0.44].forEach((offset) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(880, ctx.currentTime + offset);
+        gain.gain.setValueAtTime(0.7, ctx.currentTime + offset);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + offset + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + offset);
+        osc.stop(ctx.currentTime + offset + 0.18);
+      });
     } catch (e) {}
   };
 
@@ -246,76 +220,42 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* Middle Row: Live Temperature Chart & Environmental / Relay Panels */}
-      <div className="col-span-12 lg:col-span-9 bg-[#111318] border border-[#434655] flex flex-col h-[280px] md:h-[340px] lg:h-[380px] overflow-hidden">
+      {/* Middle Row: Temperature History Chart & Environmental / Relay Panels */}
+      <div className="col-span-12 lg:col-span-9 bg-[#111318] border border-[#434655] flex flex-col h-[260px] sm:h-[320px] lg:h-[380px] overflow-hidden">
         <div className="px-4 py-3 border-b border-[#434655] flex justify-between items-center">
           <h3 className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#e2e2e9]">
-            Live Temperature Trend (2-min window)
+            Live Temperature History (Primary Bus)
           </h3>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#ffb4ab]" />
-              <span className="font-[Inter] text-[10px] font-bold text-[#c3c6d7]">Hotspot</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#2563eb]" />
-              <span className="font-[Inter] text-[10px] font-bold text-[#c3c6d7]">Ambient</span>
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="w-3 h-3 bg-[#2563eb]"></span>
+            <span className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">
+              Node_01_Hotspot
+            </span>
           </div>
         </div>
-        <div className="flex-1 relative bg-[#0c0e13] overflow-hidden">
-          <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 300">
+        <div className="flex-1 p-4 relative bg-[#0c0e13] overflow-hidden">
+          <svg className="w-full h-full overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+            <polyline
+              points={buildPolylinePoints(tempHistory, 1000, 300, 30, 30)}
+              fill="none"
+              stroke="#2563eb"
+              strokeWidth="3"
+              vectorEffect="non-scaling-stroke"
+            />
             <defs>
-              <linearGradient id="gradHot" x1="0%" x2="0%" y1="0%" y2="100%">
-                <stop offset="0%" stopColor="#ffb4ab" stopOpacity={0.3} />
-                <stop offset="100%" stopColor="#ffb4ab" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="gradAmb" x1="0%" x2="0%" y1="0%" y2="100%">
-                <stop offset="0%" stopColor="#2563eb" stopOpacity={0.15} />
-                <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
+              <linearGradient id="grad" x1="0%" x2="0%" y1="0%" y2="100%">
+                <stop offset="0%" style={{ stopColor: "#2563eb", stopOpacity: 1 }} />
+                <stop offset="100%" style={{ stopColor: "#2563eb", stopOpacity: 0 }} />
               </linearGradient>
             </defs>
-            {/* Y-axis guide lines */}
-            {[0, 0.25, 0.5, 0.75, 1].map((t) => (
-              <line key={t} x1="0" x2="1000" y1={20 + t * 260} y2={20 + t * 260}
-                stroke="#282a30" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-            ))}
-            {/* Live hotspot line */}
-            {hotspotBuffer.current.length >= 2 && (
-              <>
-                <polyline
-                  points={buildPolyline(hotspotBuffer.current, 15, 80)}
-                  fill="none" stroke="#ffb4ab" strokeWidth="2" vectorEffect="non-scaling-stroke"
-                  style={{ transition: "points 0.4s ease" }}
-                />
-                <polyline
-                  points={`${buildPolyline(hotspotBuffer.current, 15, 80)} 1000,290 0,290`}
-                  fill="url(#gradHot)" stroke="none"
-                />
-              </>
-            )}
-            {/* Live ambient line */}
-            {ambientBuffer.current.length >= 2 && (
-              <polyline
-                points={buildPolyline(ambientBuffer.current, 15, 80)}
-                fill="none" stroke="#2563eb" strokeWidth="1.5" strokeDasharray="6 3"
-                vectorEffect="non-scaling-stroke"
-                style={{ transition: "points 0.4s ease" }}
-              />
-            )}
           </svg>
-          {/* Live tooltip showing current values */}
-          <div className="absolute right-4 top-3 bg-[#1a1b21]/90 border border-[#434655] rounded px-3 py-2 text-[10px] font-['JetBrains_Mono'] backdrop-blur-sm">
-            <div className="text-[#ffb4ab] font-bold">HOT: {sensorMetrics.hotspotTemp}°C</div>
-            <div className="text-[#2563eb] font-bold">AMB: {sensorMetrics.ambientTemp}°C</div>
-            <div className="text-[#c3c6d7] mt-1">{sensorMetrics.timestamp}</div>
-          </div>
-          {/* Empty state while building buffer */}
-          {hotspotBuffer.current.length < 2 && (
-            <div className="absolute inset-0 flex items-center justify-center text-[#434655] font-['JetBrains_Mono'] text-[12px]">
-              Collecting data...
+
+          {/* Marker Tooltip */}
+          <div className="absolute right-6 top-4 flex flex-col items-end pointer-events-none">
+            <div className="bg-[#33353a]/90 border border-[#434655] px-3 py-1.5 rounded text-[11px] font-['JetBrains_Mono'] text-[#e2e2e9] backdrop-blur-sm shadow-md">
+              HOTSPOT: <span className="text-[#b4c5ff] font-bold">{sensorMetrics.hotspotTemp}°C</span>
             </div>
-          )}
+          </div>
         </div>
       </div>
 
@@ -402,7 +342,7 @@ function Dashboard() {
       </div>
 
       {/* Bottom Row: Buzzer, Health, Event Timeline */}
-      <div className="col-span-12 lg:col-span-3 bg-[#111318] border border-[#434655] p-4 flex flex-col justify-between">
+      <div className="col-span-12 md:col-span-6 lg:col-span-3 bg-[#111318] border border-[#434655] p-4 flex flex-col justify-between">
         <div>
           <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7] mb-3">
             GPIO 19 Buzzer Alarm
@@ -442,7 +382,7 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="col-span-12 lg:col-span-3 bg-[#111318] border border-[#434655] p-4 flex flex-col gap-3">
+      <div className="col-span-12 md:col-span-6 lg:col-span-3 bg-[#111318] border border-[#434655] p-4 flex flex-col gap-3">
         <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7]">
           Device Health
         </p>
@@ -546,21 +486,12 @@ function ThermalMonitor() {
    3. ANALYTICS VIEW (analytics_load_curve/code.html)
    ========================================================================= */
 function Analytics() {
-  const { sensorMetrics } = useTelemetry();
-
-  // Rolling buffer for live ACS712 current curve — 60 readings = 2 min window
-  const currentBuffer = useRollingBuffer(sensorMetrics.lineCurrent, 60);
-  const [, forceUpdate] = useState(0);
-  useEffect(() => { forceUpdate((n) => n + 1); }, [sensorMetrics.lineCurrent]);
-
-  const overloadLimit = 10.0;
-  // Position of the overload threshold line in the viewBox
-  const overloadY = 280 - ((overloadLimit - 0) / (overloadLimit * 1.2)) * 260;
+  const { sensorMetrics, currentHistory } = useTelemetry();
 
   return (
     <div className="space-y-6">
-      {/* Top Analytics Cards — 2-col on mobile, 4-col on md+ */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      {/* Top Analytics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-[#111318] border border-[#434655] p-4">
           <p className="font-[Inter] text-[11px] font-bold tracking-[0.05em] text-[#c3c6d7] uppercase mb-1">
             Peak Current Load
@@ -623,60 +554,32 @@ function Analytics() {
 
       {/* Main Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-[#111318] border border-[#434655] p-4 md:p-6 overflow-hidden">
-          <div className="flex justify-between items-center mb-4 md:mb-6">
-            <h3 className="font-[Inter] text-[15px] md:text-[18px] font-semibold text-[#e2e2e9] flex items-center gap-2">
-              <span className="w-2.5 h-2.5 bg-[#b4c5ff] rounded-full" />
-              ACS712 Live Current Load
+        <div className="lg:col-span-2 bg-[#111318] border border-[#434655] p-6 overflow-hidden">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="font-[Inter] text-[18px] font-semibold text-[#e2e2e9] flex items-center gap-2">
+              <span className="w-2.5 h-2.5 bg-[#b4c5ff] rounded-full"></span>
+              ACS712 Current Load Curve
             </h3>
-            <span className="flex items-center gap-1.5 text-[10px] font-['JetBrains_Mono'] text-[#b4c5ff]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#b4c5ff] animate-pulse" />
-              {sensorMetrics.lineCurrent.toFixed(1)}A LIVE
-            </span>
+            <div className="flex gap-2">
+              <button className="bg-[#282a2f] border border-[#434655] px-3 py-1 font-[Inter] text-[11px] font-bold text-[#b4c5ff] rounded">
+                LIVE
+              </button>
+            </div>
           </div>
 
-          <div className="relative h-[240px] md:h-[320px] lg:h-[360px] w-full bg-[#0c0e13] border border-[#434655] overflow-hidden rounded">
-            <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 300">
-              <defs>
-                <linearGradient id="gradCur" x1="0%" x2="0%" y1="0%" y2="100%">
-                  <stop offset="0%" stopColor="#2563eb" stopOpacity={0.2} />
-                  <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              {/* Y-axis guides */}
-              {[0, 0.25, 0.5, 0.75, 1].map((t) => (
-                <line key={t} x1="0" x2="1000" y1={20 + t * 260} y2={20 + t * 260}
-                  stroke="#1e2028" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-              ))}
-              {/* Overload threshold line */}
-              <line x1="0" x2="1000" y1={overloadY} y2={overloadY}
-                stroke="#ffb4ab" strokeDasharray="5 4" strokeWidth="1"
-                vectorEffect="non-scaling-stroke" />
-              {/* Live current polyline */}
-              {currentBuffer.current.length >= 2 && (
-                <>
-                  <polyline
-                    points={buildPolyline(currentBuffer.current, 0, overloadLimit * 1.2)}
-                    fill="none" stroke="#2563eb" strokeWidth="2"
-                    vectorEffect="non-scaling-stroke"
-                    style={{ transition: "points 0.4s ease" }}
-                  />
-                  <polyline
-                    points={`${buildPolyline(currentBuffer.current, 0, overloadLimit * 1.2)} 1000,290 0,290`}
-                    fill="url(#gradCur)" stroke="none"
-                  />
-                </>
-              )}
-              {currentBuffer.current.length < 2 && (
-                <text x="500" y="160" textAnchor="middle" fill="#434655"
-                  fontSize="16" fontFamily="JetBrains Mono">
-                  Collecting data...
-                </text>
-              )}
+          <div className="relative h-[240px] sm:h-[300px] lg:h-[360px] w-full bg-[#0c0e13] border border-[#434655] overflow-hidden rounded">
+            <svg className="w-full h-full overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+              <line x1="0" x2="1000" y1="60" y2="60" stroke="#ffb4ab" strokeDasharray="4 4" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+              <polyline
+                points={buildPolylinePoints(currentHistory, 1000, 300, 0, 12)}
+                fill="none"
+                stroke="#2563eb"
+                strokeWidth="3"
+                vectorEffect="non-scaling-stroke"
+              />
             </svg>
-            <div className="absolute left-4 font-['JetBrains_Mono'] text-[10px] text-[#ffb4ab] font-bold"
-              style={{ top: `${(overloadY / 300) * 100}%` }}>
-              {overloadLimit}A [OVERLOAD LIMIT]
+            <div className="absolute left-4 top-[50px] font-['JetBrains_Mono'] text-[10px] text-[#ffb4ab] font-bold">
+              10.0A [OVERLOAD LIMIT]
             </div>
           </div>
         </div>
@@ -721,16 +624,19 @@ function Alerts() {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(1046.5, ctx.currentTime);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.2);
+
+      [0, 0.22, 0.44].forEach((offset) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(880, ctx.currentTime + offset);
+        gain.gain.setValueAtTime(0.7, ctx.currentTime + offset);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + offset + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + offset);
+        osc.stop(ctx.currentTime + offset + 0.18);
+      });
     } catch (e) {}
   };
 
@@ -763,10 +669,10 @@ function Alerts() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6">
-      <div className="lg:col-span-8 space-y-4">
-        <div className="bg-[#111318] border border-[#434655] p-3 flex items-center justify-between rounded">
-          <h3 className="font-[Inter] text-[15px] md:text-[18px] font-bold text-[#e2e2e9]">Incident Log Feed</h3>
+    <div className="grid grid-cols-12 gap-6">
+      <div className="col-span-12 lg:col-span-8 space-y-4">
+        <div className="bg-[#111318] border border-[#434655] p-3 flex items-center justify-between">
+          <h3 className="font-[Inter] text-[18px] font-bold text-[#e2e2e9]">Incident Log Feed</h3>
           <span className="font-['JetBrains_Mono'] text-[12px] text-[#b4c5ff]">
             {incidents.filter((i) => !i.ack).length} Active Alerts
           </span>
@@ -774,36 +680,36 @@ function Alerts() {
 
         <div className="space-y-2">
           {incidents.map((inc) => (
-            <div key={inc.id} className="bg-[#111318] border border-[#434655] p-3 md:p-4 flex flex-wrap items-start md:items-center justify-between gap-3 rounded">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={`px-2 py-0.5 font-[Inter] text-[10px] font-bold rounded shrink-0 ${
+            <div key={inc.id} className="bg-[#111318] border border-[#434655] p-4 flex items-center justify-between rounded">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 font-[Inter] text-[10px] font-bold rounded ${
                     inc.level === "CRITICAL" ? "bg-[#93000a] text-[#ffdad6]" : "bg-[#33353a] text-[#b4c5ff]"
                   }`}>
                     {inc.level}
                   </span>
                   <span className="font-['JetBrains_Mono'] text-[12px] text-[#c3c6d7]">{inc.source}</span>
-                  <span className="font-['JetBrains_Mono'] text-[10px] text-[#c3c6d7] hidden sm:inline">{inc.time}</span>
+                  <span className="font-['JetBrains_Mono'] text-[11px] text-[#c3c6d7]">{inc.time}</span>
                 </div>
-                <p className="mt-1 font-[Inter] text-[13px] md:text-[14px] font-semibold text-[#e2e2e9]">{inc.desc}</p>
+                <p className="mt-1 font-[Inter] text-[14px] font-semibold text-[#e2e2e9]">{inc.desc}</p>
               </div>
 
               {!inc.ack ? (
                 <button
                   onClick={() => handleAck(inc.id)}
-                  className="px-3 py-1 bg-[#2563eb]/10 border border-[#2563eb]/30 text-[#b4c5ff] font-[Inter] text-[11px] font-bold rounded hover:bg-[#2563eb] hover:text-[#eeefff] transition-all shrink-0"
+                  className="px-3 py-1 bg-[#2563eb]/10 border border-[#2563eb]/30 text-[#b4c5ff] font-[Inter] text-[11px] font-bold rounded hover:bg-[#2563eb] hover:text-[#eeefff] transition-all"
                 >
                   ACK
                 </button>
               ) : (
-                <span className="font-[Inter] text-[11px] font-bold text-[#c3c6d7] shrink-0">ACKNOWLEDGED</span>
+                <span className="font-[Inter] text-[11px] font-bold text-[#c3c6d7]">ACKNOWLEDGED</span>
               )}
             </div>
           ))}
         </div>
       </div>
 
-      <div className="lg:col-span-4 bg-[#111318] border border-[#434655] p-6 rounded">
+      <div className="col-span-12 lg:col-span-4 bg-[#111318] border border-[#434655] p-6 rounded">
         <h3 className="font-[Inter] text-[11px] font-bold uppercase tracking-wider text-[#c3c6d7] mb-4">
           GPIO 19: Buzzer Hardware Map
         </h3>
@@ -832,14 +738,14 @@ function Logs() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#111318] border border-[#434655] p-4 rounded">
+      <div className="flex justify-between items-center bg-[#111318] border border-[#434655] p-4 rounded">
         <div>
-          <h3 className="font-[Inter] text-[16px] md:text-[18px] font-bold text-[#e2e2e9]">System Telemetry Logs</h3>
-          <p className="font-[Inter] text-[12px] md:text-[13px] text-[#c3c6d7]">Raw time-series telemetry recorded by ESP32</p>
+          <h3 className="font-[Inter] text-[18px] font-bold text-[#e2e2e9]">System Telemetry Logs</h3>
+          <p className="font-[Inter] text-[13px] text-[#c3c6d7]">Raw time-series telemetry recorded by ESP32</p>
         </div>
         <button
           onClick={handleExportCSV}
-          className="shrink-0 px-4 py-2 bg-[#2563eb] text-[#eeefff] font-[Inter] text-[11px] font-bold rounded hover:brightness-110 transition-all"
+          className="px-4 py-2 bg-[#2563eb] text-[#eeefff] font-[Inter] text-[11px] font-bold rounded hover:brightness-110 transition-all"
         >
           Export CSV Log
         </button>

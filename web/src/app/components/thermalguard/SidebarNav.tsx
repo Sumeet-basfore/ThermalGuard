@@ -17,6 +17,7 @@ import {
   Settings,
   Info,
   Radio,
+  CheckCircle2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -37,32 +38,32 @@ export function SidebarNav({
     {
       label: "Dashboard",
       href: "/",
-      icon: <LayoutDashboard className="text-[#b4c5ff] h-5 w-5 flex-shrink-0" />,
+      icon: <LayoutDashboard className="h-5 w-5" />,
     },
     {
       label: "Thermal Monitor",
       href: "/thermal-monitor",
-      icon: <Thermometer className="text-[#ffb4ab] h-5 w-5 flex-shrink-0" />,
+      icon: <Thermometer className="h-5 w-5" />,
     },
     {
       label: "Analytics",
       href: "/analytics",
-      icon: <BarChart3 className="text-[#b4c5ff] h-5 w-5 flex-shrink-0" />,
+      icon: <BarChart3 className="h-5 w-5" />,
     },
     {
       label: "Alerts",
       href: "/alerts",
-      icon: <Bell className="text-[#ffb4ab] h-5 w-5 flex-shrink-0" />,
+      icon: <Bell className="h-5 w-5" />,
     },
     {
       label: "Logs",
       href: "/logs",
-      icon: <FileText className="text-[#c3c6d7] h-5 w-5 flex-shrink-0" />,
+      icon: <FileText className="h-5 w-5" />,
     },
     {
       label: "Devices",
       href: "/devices",
-      icon: <Cpu className="text-[#c3c6d7] h-5 w-5 flex-shrink-0" />,
+      icon: <Cpu className="h-5 w-5" />,
     },
   ];
 
@@ -70,12 +71,12 @@ export function SidebarNav({
     {
       label: "Settings",
       href: "/settings",
-      icon: <Settings className="text-[#c3c6d7] h-5 w-5 flex-shrink-0" />,
+      icon: <Settings className="h-5 w-5" />,
     },
     {
       label: "About",
       href: "/about",
-      icon: <Info className="text-[#c3c6d7] h-5 w-5 flex-shrink-0" />,
+      icon: <Info className="h-5 w-5" />,
     },
   ];
 
@@ -102,15 +103,17 @@ function SidebarNavContent({
   const { open, setOpen } = useSidebar();
 
   return (
-    <SidebarBody className="justify-between gap-6 bg-[#111318] border-r border-[#434655] text-[#e2e2e9]">
+    <SidebarBody className="justify-between gap-6 bg-[#111318] border-r border-[#2d313d] text-[#e2e2e9]">
       <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
         {/* Brand Header */}
-        <div className="flex items-center gap-3 py-2 px-1 mb-6 border-b border-[#434655]/40 pb-4">
-          <img
-            src="/Logo.jpeg"
-            alt="ThermalGuard Logo"
-            className="w-8 h-8 rounded-lg object-cover border border-[#434655] flex-shrink-0"
-          />
+        <div className="flex items-center gap-3 py-2 px-1 mb-5 border-b border-[#2d313d]/80 pb-4">
+          <div className="w-8 h-8 flex items-center justify-center shrink-0">
+            <img
+              src="/Logo.jpeg"
+              alt="ThermalGuard Logo"
+              className="w-7 h-7 rounded-lg object-cover border border-[#434655] shadow-sm"
+            />
+          </div>
           <motion.div
             animate={{
               display: open ? "block" : "none",
@@ -118,28 +121,40 @@ function SidebarNavContent({
             }}
             className="overflow-hidden whitespace-nowrap"
           >
-            <h1 className="font-[Inter] text-[20px] leading-[24px] font-bold text-[#e2e2e9]">
-              ThermalGuard
-            </h1>
-            <p className="font-[Inter] text-[10px] leading-[14px] tracking-[0.05em] font-bold text-[#c3c6d7] opacity-60">
+            <div className="flex items-center gap-2">
+              <h1 className="font-[Inter] text-[18px] leading-[22px] font-bold tracking-tight text-[#f0f0f5]">
+                ThermalGuard
+              </h1>
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#34d399] animate-pulse" title="System Online" />
+            </div>
+            <p className="font-['JetBrains_Mono'] text-[10px] leading-[14px] tracking-[0.05em] font-semibold text-[#8b91a3]">
               v2.4 STABLE
             </p>
           </motion.div>
         </div>
 
         {/* Primary Links */}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-1.5">
           {primaryLinks.map((link) => {
             const isActive = currentPath === link.href;
             return (
               <SidebarLink
                 key={link.href}
-                link={link}
+                link={{
+                  ...link,
+                  icon: React.cloneElement(link.icon as React.ReactElement, {
+                    className: `h-5 w-5 transition-colors ${
+                      isActive
+                        ? "text-[#60a5fa]"
+                        : "text-[#8b91a3] group-hover/sidebar:text-[#b4c5ff]"
+                    }`,
+                  }),
+                }}
                 onClick={() => setOpen(false)}
-                className={`px-2 py-2 rounded-md transition-all ${
+                className={`py-2 px-2 rounded-lg transition-all duration-150 ${
                   isActive
-                    ? "bg-[#282a2f] text-[#e2e2e9] font-semibold border-l-2 border-[#2563eb]"
-                    : "text-[#c3c6d7] hover:bg-[#282a2f] hover:text-[#e2e2e9]"
+                    ? "bg-gradient-to-r from-[#2563eb]/20 via-[#2563eb]/10 to-transparent text-white font-medium border-l-[3px] border-[#3b82f6] shadow-sm"
+                    : "text-[#a1a5b7] hover:bg-[#1c1e26] hover:text-[#e2e2e9]"
                 }`}
               />
             );
@@ -148,22 +163,27 @@ function SidebarNavContent({
       </div>
 
       {/* Footer / Active Node & Secondary Links */}
-      <div className="flex flex-col gap-3 pt-4 border-t border-[#434655]">
+      <div className="flex flex-col gap-3 pt-3 border-t border-[#2d313d]/80">
         {/* Active Node Card */}
-        <div className="bg-[#1a1b21] p-2.5 rounded border border-[#434655] flex items-center gap-2">
-          <Radio className="h-4 w-4 text-[#b4c5ff] animate-pulse flex-shrink-0" />
+        <div className="bg-[#171920] p-2 rounded-lg border border-[#2d313d] flex items-center gap-2.5 transition-colors hover:border-[#3b82f6]/40">
+          <div className="w-7 h-7 flex items-center justify-center shrink-0 rounded-md bg-[#2563eb]/10 border border-[#2563eb]/20">
+            <Radio className="h-4 w-4 text-[#60a5fa] animate-pulse" />
+          </div>
           <motion.div
             animate={{
               display: open ? "block" : "none",
               opacity: open ? 1 : 0,
             }}
-            className="overflow-hidden whitespace-nowrap"
+            className="overflow-hidden whitespace-nowrap min-w-0"
           >
-            <p className="font-[Inter] text-[10px] leading-[12px] tracking-[0.05em] font-bold text-[#b4c5ff]">
-              ACTIVE NODE
-            </p>
-            <p className="font-['JetBrains_Mono'] text-[11px] text-[#e2e2e9] truncate">
-              ESP32 Gateway Node #01
+            <div className="flex items-center gap-1.5">
+              <span className="font-[Inter] text-[9px] leading-[12px] tracking-[0.06em] font-bold uppercase text-[#60a5fa]">
+                ACTIVE NODE
+              </span>
+              <CheckCircle2 className="w-3 h-3 text-[#34d399]" />
+            </div>
+            <p className="font-['JetBrains_Mono'] text-[11px] text-[#e2e2e9] truncate font-medium">
+              ESP32 Gateway #01
             </p>
           </motion.div>
         </div>
@@ -175,12 +195,21 @@ function SidebarNavContent({
             return (
               <SidebarLink
                 key={link.href}
-                link={link}
+                link={{
+                  ...link,
+                  icon: React.cloneElement(link.icon as React.ReactElement, {
+                    className: `h-4 w-4 transition-colors ${
+                      isActive
+                        ? "text-[#60a5fa]"
+                        : "text-[#8b91a3] group-hover/sidebar:text-[#b4c5ff]"
+                    }`,
+                  }),
+                }}
                 onClick={() => setOpen(false)}
-                className={`px-2 py-1.5 rounded-md transition-colors ${
+                className={`py-1.5 px-2 rounded-lg transition-colors ${
                   isActive
-                    ? "bg-[#282a2f] text-[#b4c5ff] font-semibold"
-                    : "text-[#c3c6d7] hover:text-[#b4c5ff] hover:bg-[#282a2f]"
+                    ? "bg-[#1c1e26] text-[#60a5fa] font-medium"
+                    : "text-[#8b91a3] hover:text-[#e2e2e9] hover:bg-[#1c1e26]"
                 }`}
               />
             );
