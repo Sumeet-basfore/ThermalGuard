@@ -66,11 +66,17 @@ float relayTripDelay = 2.0;  // Seconds
 // ============================================================
 // SECTION 4: TIMING INTERVALS (millis-based)
 // ============================================================
-const unsigned long MLX_READ_INTERVAL_MS     = 500;
-const unsigned long DHT_READ_INTERVAL_MS     = 2000;
-const unsigned long CURRENT_READ_INTERVAL_MS = 250;
-const unsigned long LCD_ROTATE_INTERVAL_MS   = 2500;
+const unsigned long MLX_READ_INTERVAL_MS      = 2100;  // 0.5Hz frame rate requires ~2s capture window
+const unsigned long DHT_READ_INTERVAL_MS      = 2000;
+const unsigned long CURRENT_READ_INTERVAL_MS  = 250;
+const unsigned long LCD_ROTATE_INTERVAL_MS    = 2500;
 const unsigned long SERIAL_STATUS_INTERVAL_MS = 2000;
+
+// LEDC (PWM) Buzzer Config — louder than raw digitalWrite
+const uint8_t  LEDC_CHANNEL    = 0;
+const uint32_t LEDC_FREQ_ALARM = 2730;  // Active buzzer resonant frequency
+const uint32_t LEDC_FREQ_ALT   = 3500;  // Alternate alarm tone
+const uint8_t  LEDC_RESOLUTION = 8;     // 8-bit duty (0-255)
 
 // ============================================================
 // SECTION 5: GLOBAL OBJECTS & FUNCTION PROTOTYPES
@@ -251,9 +257,16 @@ void handleRoot() {
 
 void handleTestBuzzer() {
   handleCORS();
-  digitalWrite(PIN_BUZZER, HIGH);
-  delay(200);
-  digitalWrite(PIN_BUZZER, LOW);
+  // Two-beep pattern via PWM for clear audible confirmation
+  ledcWriteTone(LEDC_CHANNEL, LEDC_FREQ_ALARM);
+  ledcWrite(LEDC_CHANNEL, 255);
+  delay(300);
+  ledcWrite(LEDC_CHANNEL, 0);
+  delay(120);
+  ledcWriteTone(LEDC_CHANNEL, LEDC_FREQ_ALT);
+  ledcWrite(LEDC_CHANNEL, 255);
+  delay(300);
+  ledcWrite(LEDC_CHANNEL, 0);
   server.send(200, "application/json", "{\"status\":\"buzzer_tested\"}");
 }
 
@@ -407,6 +420,11 @@ void setup() {
   analogReadResolution(12);
   analogSetPinAttenuation(PIN_ACS712, ADC_11db);
 
+  // Initialize LEDC PWM for buzzer — drives louder than raw digitalWrite
+  ledcSetup(LEDC_CHANNEL, LEDC_FREQ_ALARM, LEDC_RESOLUTION);
+  ledcAttachPin(PIN_BUZZER, LEDC_CHANNEL);
+  ledcWrite(LEDC_CHANNEL, 0); // Start silent
+
   Wire.setBufferSize(2048); // Expand ESP32 I2C buffer to 2048 bytes
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
   Wire.setClock(100000);   // 100kHz standard bus clock
@@ -511,9 +529,9 @@ void initSensors() {
   if (mlx.begin(MLX90640_I2CADDR_DEFAULT, &Wire)) {
     mlx.setMode(MLX90640_CHESS);
     mlx.setResolution(MLX90640_ADC_18BIT);
-    mlx.setRefreshRate(MLX90640_1_HZ); // 1Hz for maximum timing stability
+    mlx.setRefreshRate(MLX90640_0_5_HZ); // 0.5Hz — stable frame capture, matches 2100ms read interval
     mlxReady = true;
-    Serial.println(F("MLX Thermal Sensor.......OK (1 FPS)"));
+    Serial.println(F("MLX Thermal Sensor.......OK (0.5 FPS — Real Frame Mode)"));
   } else {
     mlxReady = false;
     Serial.println(F("MLX Thermal Sensor.......FAILED (Check I2C Address 0x33 or SDA/SCL Wiring)"));
@@ -549,44 +567,41 @@ void showBootScreen() {
 }
 
 void readMLX() {
-  if (!mlxReady) {
-    // Dynamic sweeping hotspot trajectory for fallback/demo
-    static float angle = 0.0;
-    angle += 0.2;
-    mlxHotspotX = 16 + (int)(11.0 * cos(angle));
-    mlxHotspotY = 12 + (int)(7.0 * sin(angle * 0.8));
-    float noise = ((rand() % 10) - 5) * 0.1;
-    mlxHotspotTempC = 42.8 + noise;
-    mlxMinTempC     = 22.1;
-    mlxAvgTempC     = 29.6;
+  if (!mlxReady) return;
+  Wire.setClock(100000);
+
+  // Acquire real 32x24 (768-pixel) thermal frame from MLX90640
+  float frame[MLX_PIXEL_COUNT];
+  if (mlx.getFrame(frame) != 0) {
+    // Frame acquisition failed — retain last known good telemetry
+    Serial.println(F("MLX: getFrame() failed — retaining last values."));
     return;
   }
 
-  Wire.setClock(400000); // Fast 400kHz I2C bus for MLX frame transfer
-  if (mlx.getFrame(mlxFrame) == 0) {
-    float maxVal = -999.0;
-    float minVal = 999.0;
-    float sumVal = 0.0;
-    uint16_t maxIdx = 0;
+  // Scan all 768 pixels to compute stats and locate hotspot
+  float minT =  999.0f, maxT = -999.0f, sumT = 0.0f;
+  int   hotX = 0,       hotY = 0;
 
-    for (uint16_t i = 0; i < MLX_PIXEL_COUNT; i++) {
-      float v = mlxFrame[i];
-      sumVal += v;
-      if (v > maxVal) {
-        maxVal = v;
-        maxIdx = i;
-      }
-      if (v < minVal) {
-        minVal = v;
-      }
+  for (int y = 0; y < MLX_ROWS; y++) {
+    for (int x = 0; x < MLX_COLS; x++) {
+      int   idx  = y * MLX_COLS + x;
+      float temp = frame[idx];
+
+      mlxFrame[idx] = temp; // Populate global pixel buffer for REST API
+      sumT += temp;
+
+      if (temp > maxT) { maxT = temp; hotX = x; hotY = y; }
+      if (temp < minT)   minT = temp;
     }
-
-    mlxHotspotTempC = maxVal;
-    mlxMinTempC     = minVal;
-    mlxAvgTempC     = sumVal / (float)MLX_PIXEL_COUNT;
-    mlxHotspotX     = maxIdx % 32; // 0..31 X coordinate
-    mlxHotspotY     = maxIdx / 32; // 0..23 Y coordinate
   }
+
+  // Commit computed statistics to global state
+  mlxMinTempC     = minT;
+  mlxMaxTempC     = maxT;
+  mlxHotspotTempC = maxT;
+  mlxAvgTempC     = sumT / (float)MLX_PIXEL_COUNT;
+  mlxHotspotX     = hotX;
+  mlxHotspotY     = hotY;
 }
 
 void readDHT() {
@@ -606,13 +621,24 @@ void checkSafetyInterlocks() {
   // Overcurrent or Overheat Interlock
   if (acsCurrentA >= currentLimit || mlxHotspotTempC >= tempThreshold) {
     digitalWrite(PIN_RELAY, HIGH); // Open Relay (Trip Line)
-    digitalWrite(PIN_BUZZER, HIGH); // Sound Acoustic Alarm
-    relayIsOn = true;
+
+    // Two-tone alternating alarm via LEDC PWM for maximum volume
+    static unsigned long lastBuzzerToggle = 0;
+    static bool          buzzerToneHigh   = false;
+    unsigned long        now              = millis();
+    if (now - lastBuzzerToggle >= 500) {
+      ledcWriteTone(LEDC_CHANNEL, buzzerToneHigh ? LEDC_FREQ_ALT : LEDC_FREQ_ALARM);
+      ledcWrite(LEDC_CHANNEL, 255); // Max duty cycle = max volume
+      buzzerToneHigh   = !buzzerToneHigh;
+      lastBuzzerToggle = now;
+    }
+
+    relayIsOn  = true;
     buzzerIsOn = true;
   } else {
     digitalWrite(PIN_RELAY, LOW);
-    digitalWrite(PIN_BUZZER, LOW);
-    relayIsOn = false;
+    ledcWrite(LEDC_CHANNEL, 0); // Silence buzzer via PWM
+    relayIsOn  = false;
     buzzerIsOn = false;
   }
 }

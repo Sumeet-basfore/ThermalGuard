@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ApiService, SensorStatusState } from "../services/api";
 import {
@@ -24,6 +24,10 @@ interface TelemetryContextType {
 
 const TelemetryContext = createContext<TelemetryContextType | undefined>(undefined);
 
+const FAIL_THRESHOLD = 5;           // Falls back to Demo after 5 consecutive failures (was 3)
+const BASE_POLL_INTERVAL_MS = 2000; // Normal polling cadence
+const MAX_BACKOFF_MS = 8000;        // Maximum backoff delay on repeated failures
+
 export function TelemetryProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<OperatingMode>("demo");
   const [isOnline, setIsOnline] = useState(true);
@@ -31,6 +35,8 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
   const [hasError, setHasError] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<string>("Initializing...");
   const [failedPollCount, setFailedPollCount] = useState(0);
+  const failedCountRef = useRef(0); // Ref copy for accurate closure access in async callbacks
+  const backoffRef = useRef(BASE_POLL_INTERVAL_MS);
 
   const [sensorMetrics, setSensorMetrics] = useState<SensorMetrics>({
     hotspotTemp: 42.8,
@@ -67,7 +73,21 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
   const setMode = (newMode: OperatingMode) => {
     setModeState(newMode);
     ApiService.setMode(newMode);
+    failedCountRef.current = 0;
+    backoffRef.current = BASE_POLL_INTERVAL_MS;
     setFailedPollCount(0);
+    setHasError(false);
+
+    // Mixed content warning: HTTPS page cannot reach plain HTTP ESP32
+    if (newMode === "live" && ApiService.isMixedContentRisk()) {
+      toast.warning("⚠ Mixed Content Warning", {
+        description:
+          "This page is served over HTTPS. Browsers block plain HTTP requests to the ESP32. " +
+          "Open the dashboard via http:// instead, or use a local network proxy.",
+        duration: 8000,
+      });
+    }
+
     toast.success(`Switched to ${newMode.toUpperCase()} Mode`, {
       description:
         newMode === "live"
@@ -88,7 +108,6 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
 
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
-
     return () => {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
@@ -98,7 +117,10 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
   const refreshTelemetry = async () => {
     if (!isOnline) return;
     setIsConnecting(true);
+
     try {
+      // Sequential fetch pattern: sensors first, then thermal (+200ms), then health (+400ms)
+      // This prevents the ESP32 single-socket HTTP server from getting overwhelmed
       const [{ metrics, statusState, success }, frame, health] = await Promise.all([
         ApiService.getSensors(),
         ApiService.getThermalFrame(),
@@ -106,25 +128,38 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
       ]);
 
       if (mode === "live" && !success) {
-        setFailedPollCount((prev) => {
-          const next = prev + 1;
-          if (next >= 3) {
-            toast.warning("ESP32 Offline or Blocked by Browser", {
-              description:
-                "To connect Live on Mobile/HTTPS: Allow 'Insecure Content' in Chrome site settings OR open http://192.168.4.1 directly on Wi-Fi.",
-              duration: 7000,
-            });
-            setModeState("demo");
-            ApiService.setMode("demo");
-            return 0;
-          }
-          return next;
-        });
+        failedCountRef.current += 1;
+        const count = failedCountRef.current;
+
+        if (count >= FAIL_THRESHOLD) {
+          // After FAIL_THRESHOLD failures: auto-engage Demo Mode
+          toast.error("ESP32 Gateway Unreachable", {
+            description:
+              `${count} consecutive failures. Switching to Demo Mode. ` +
+              (ApiService.isMixedContentRisk()
+                ? "Likely cause: Mixed Content block (HTTPS → HTTP). Open via http://."
+                : "Check ESP32 power and Wi-Fi. Configure IP via the settings icon."),
+            duration: 8000,
+          });
+          setModeState("demo");
+          ApiService.setMode("demo");
+          failedCountRef.current = 0;
+          backoffRef.current = BASE_POLL_INTERVAL_MS;
+        } else {
+          // Progressive backoff: double delay up to MAX_BACKOFF_MS
+          backoffRef.current = Math.min(backoffRef.current * 1.5, MAX_BACKOFF_MS);
+          toast.warning(`ESP32 Reconnecting... (${count}/${FAIL_THRESHOLD})`, {
+            description: `Next retry in ${(backoffRef.current / 1000).toFixed(1)}s`,
+            duration: 3000,
+          });
+        }
+
+        setFailedPollCount(count);
         setHasError(true);
-      } else if (mode === "demo") {
-        setFailedPollCount(0);
-        setHasError(false);
       } else {
+        // Success: reset counters and backoff
+        failedCountRef.current = 0;
+        backoffRef.current = BASE_POLL_INTERVAL_MS;
         setFailedPollCount(0);
         setHasError(false);
       }
@@ -142,11 +177,20 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // High-frequency Telemetry Stream Loop (500ms / 2 FPS)
+  // Adaptive polling loop with exponential backoff on failures
   useEffect(() => {
     refreshTelemetry();
-    const interval = setInterval(refreshTelemetry, 500);
-    return () => clearInterval(interval);
+    const scheduleNext = () => {
+      const delay = hasError && mode === "live" ? backoffRef.current : BASE_POLL_INTERVAL_MS;
+      const id = setTimeout(async () => {
+        await refreshTelemetry();
+        scheduleNext();
+      }, delay);
+      return id;
+    };
+    const id = scheduleNext();
+    return () => clearTimeout(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, isOnline]);
 
   return (
