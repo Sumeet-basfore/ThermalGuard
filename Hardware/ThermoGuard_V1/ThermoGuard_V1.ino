@@ -38,8 +38,8 @@ const uint8_t PIN_I2C_SCL    = 22;   // Shared I2C bus: MLX90640 + LCD
 #define EEPROM_SIZE         64
 
 // Wi-Fi Credentials (Set to your Home Wi-Fi Router Name & Password)
-const char* WIFI_SSID     = "vivo Y100";
-const char* WIFI_PASSWORD = "niha1212";
+const char* WIFI_SSID     = "Sumeets-AirFibre";
+const char* WIFI_PASSWORD = "hdXnTHEGEhGmkpVELuw4ybSU6R1zhzVY";
 
 // LCD Configuration
 const uint8_t LCD_COLUMNS = 16;
@@ -72,11 +72,23 @@ const unsigned long CURRENT_READ_INTERVAL_MS  = 250;
 const unsigned long LCD_ROTATE_INTERVAL_MS    = 2500;
 const unsigned long SERIAL_STATUS_INTERVAL_MS = 2000;
 
-// LEDC (PWM) Buzzer Config — louder than raw digitalWrite
+// LEDC (PWM) Buzzer Config — compatible with ESP32 Core 2.x & 3.x
 const uint8_t  LEDC_CHANNEL    = 0;
 const uint32_t LEDC_FREQ_ALARM = 2730;  // Active buzzer resonant frequency
 const uint32_t LEDC_FREQ_ALT   = 3500;  // Alternate alarm tone
 const uint8_t  LEDC_RESOLUTION = 8;     // 8-bit duty (0-255)
+
+#if defined(ESP_ARDUINO_VERSION) && ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+  // ESP32 Arduino Core 3.x API (ledcAttach, ledcWriteTone, ledcWrite take pin number)
+  #define BUZZER_INIT()               ledcAttach(PIN_BUZZER, LEDC_FREQ_ALARM, LEDC_RESOLUTION)
+  #define BUZZER_TONE(freq)           do { ledcWriteTone(PIN_BUZZER, freq); ledcWrite(PIN_BUZZER, 255); } while(0)
+  #define BUZZER_OFF()                ledcWrite(PIN_BUZZER, 0)
+#else
+  // ESP32 Arduino Core 2.x API (ledcSetup, ledcAttachPin take channel number)
+  #define BUZZER_INIT()               do { ledcSetup(LEDC_CHANNEL, LEDC_FREQ_ALARM, LEDC_RESOLUTION); ledcAttachPin(PIN_BUZZER, LEDC_CHANNEL); } while(0)
+  #define BUZZER_TONE(freq)           do { ledcWriteTone(LEDC_CHANNEL, freq); ledcWrite(LEDC_CHANNEL, 255); } while(0)
+  #define BUZZER_OFF()                ledcWrite(LEDC_CHANNEL, 0)
+#endif
 
 // ============================================================
 // SECTION 5: GLOBAL OBJECTS & FUNCTION PROTOTYPES
@@ -258,15 +270,13 @@ void handleRoot() {
 void handleTestBuzzer() {
   handleCORS();
   // Two-beep pattern via PWM for clear audible confirmation
-  ledcWriteTone(LEDC_CHANNEL, LEDC_FREQ_ALARM);
-  ledcWrite(LEDC_CHANNEL, 255);
+  BUZZER_TONE(LEDC_FREQ_ALARM);
   delay(300);
-  ledcWrite(LEDC_CHANNEL, 0);
+  BUZZER_OFF();
   delay(120);
-  ledcWriteTone(LEDC_CHANNEL, LEDC_FREQ_ALT);
-  ledcWrite(LEDC_CHANNEL, 255);
+  BUZZER_TONE(LEDC_FREQ_ALT);
   delay(300);
-  ledcWrite(LEDC_CHANNEL, 0);
+  BUZZER_OFF();
   server.send(200, "application/json", "{\"status\":\"buzzer_tested\"}");
 }
 
@@ -421,9 +431,8 @@ void setup() {
   analogSetPinAttenuation(PIN_ACS712, ADC_11db);
 
   // Initialize LEDC PWM for buzzer — drives louder than raw digitalWrite
-  ledcSetup(LEDC_CHANNEL, LEDC_FREQ_ALARM, LEDC_RESOLUTION);
-  ledcAttachPin(PIN_BUZZER, LEDC_CHANNEL);
-  ledcWrite(LEDC_CHANNEL, 0); // Start silent
+  BUZZER_INIT();
+  BUZZER_OFF(); // Start silent
 
   Wire.setBufferSize(2048); // Expand ESP32 I2C buffer to 2048 bytes
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
@@ -627,8 +636,7 @@ void checkSafetyInterlocks() {
     static bool          buzzerToneHigh   = false;
     unsigned long        now              = millis();
     if (now - lastBuzzerToggle >= 500) {
-      ledcWriteTone(LEDC_CHANNEL, buzzerToneHigh ? LEDC_FREQ_ALT : LEDC_FREQ_ALARM);
-      ledcWrite(LEDC_CHANNEL, 255); // Max duty cycle = max volume
+      BUZZER_TONE(buzzerToneHigh ? LEDC_FREQ_ALT : LEDC_FREQ_ALARM);
       buzzerToneHigh   = !buzzerToneHigh;
       lastBuzzerToggle = now;
     }
@@ -637,7 +645,7 @@ void checkSafetyInterlocks() {
     buzzerIsOn = true;
   } else {
     digitalWrite(PIN_RELAY, LOW);
-    ledcWrite(LEDC_CHANNEL, 0); // Silence buzzer via PWM
+    BUZZER_OFF(); // Silence buzzer via PWM
     relayIsOn  = false;
     buzzerIsOn = false;
   }
