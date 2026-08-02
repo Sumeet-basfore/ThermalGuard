@@ -38,7 +38,7 @@ const uint8_t PIN_I2C_SCL    = 22;   // Shared I2C bus: MLX90640 + LCD
 #define EEPROM_SIZE         64
 
 // Wi-Fi Credentials (Set to your Home Wi-Fi Router Name & Password)
-const char* WIFI_SSID     = "Sumeets-AirFibre";
+const char* WIFI_SSID     = "Sumeets-AirFiber";
 const char* WIFI_PASSWORD = "hdXnTHEGEhGmkpVELuw4ybSU6R1zhzVY";
 
 // LCD Configuration
@@ -357,7 +357,6 @@ void handlePostSettings() {
 // SECTION 8: FULL I2C BUS SCANNER & DUAL LCD INITIALIZER
 // ============================================================
 void initLCD() {
-  Wire.setClock(100000); // 100kHz standard I2C clock speed for LCD
   byte error, address;
   int nDevices = 0;
 
@@ -428,15 +427,19 @@ void setup() {
   digitalWrite(PIN_BUZZER, LOW);
 
   analogReadResolution(12);
-  analogSetPinAttenuation(PIN_ACS712, ADC_11db);
+  // ESP32 Core 3.x replaced analogSetPinAttenuation with analogSetAttenuation
+#if defined(ESP_ARDUINO_VERSION) && ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+  analogSetAttenuation(ADC_11db); // Core 3.x: global attenuation
+#else
+  analogSetPinAttenuation(PIN_ACS712, ADC_11db); // Core 2.x: per-pin attenuation
+#endif
 
   // Initialize LEDC PWM for buzzer — drives louder than raw digitalWrite
   BUZZER_INIT();
   BUZZER_OFF(); // Start silent
 
-  Wire.setBufferSize(2048); // Expand ESP32 I2C buffer to 2048 bytes
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
-  Wire.setClock(100000);   // 100kHz standard bus clock
+  Wire.setClock(400000);   // 400kHz fast-mode — required for MLX90640 frame capture
   Wire.setTimeOut(1000);   // 1000ms timeout protection against bus freeze
 
   initLCD();
@@ -653,7 +656,6 @@ void checkSafetyInterlocks() {
 
 void updateLCD() {
   if (!lcdReady) return;
-  Wire.setClock(100000); // Stabilize I2C bus at 100kHz for PCF8574 LCD transactions
 
   activeLcd->clear();
   switch (lcdScreenIndex) {
