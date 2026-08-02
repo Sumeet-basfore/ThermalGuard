@@ -76,7 +76,7 @@ enum SystemSafetyState {
 // ============================================================
 // SECTION 4: TIMING INTERVALS (millis-based)
 // ============================================================
-const unsigned long MLX_READ_INTERVAL_MS     = 500;
+const unsigned long MLX_READ_INTERVAL_MS     = 1000;
 const unsigned long DHT_READ_INTERVAL_MS     = 2000;
 const unsigned long CURRENT_READ_INTERVAL_MS = 250;
 const unsigned long LCD_ROTATE_INTERVAL_MS   = 2500;
@@ -476,10 +476,9 @@ void setup() {
   analogReadResolution(12);
   analogSetPinAttenuation(PIN_ACS712, ADC_11db);
 
-  Wire.setBufferSize(2048); // Expand ESP32 I2C buffer to 2048 bytes
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
   Wire.setClock(100000);   // 100kHz standard bus clock
-  Wire.setTimeOut(1000);   // 1000ms timeout protection against bus freeze
+  Wire.setTimeOut(250);    // 250ms non-blocking timeout protection against bus freeze
 
   initLCD();
   showBootScreen();
@@ -487,8 +486,12 @@ void setup() {
   initSensors();
   calibrateACS712();
 
-  // Start WiFi Station (Tries Home Wi-Fi Router, falls back to SoftAP hotspot)
+  // Start dual AP + Station mode (Access Point 192.168.4.1 is ALWAYS active)
   WiFi.mode(WIFI_AP_STA);
+  WiFi.softAP("ThermoGuard_AP", "Password123");
+  Serial.print(F("Access Point 'ThermoGuard_AP' Started at IP: "));
+  Serial.println(WiFi.softAPIP());
+
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print(F("Connecting to Wi-Fi network: "));
   Serial.println(WIFI_SSID);
@@ -505,10 +508,7 @@ void setup() {
     Serial.print(F("ESP32 Local Router IP Address: "));
     Serial.println(WiFi.localIP());
   } else {
-    Serial.println(F("\nHome Wi-Fi unavailable. Starting ThermoGuard_AP Access Point..."));
-    WiFi.softAP("ThermoGuard_AP", "Password123");
-    Serial.print(F("AP IP Address: "));
-    Serial.println(WiFi.softAPIP());
+    Serial.println(F("\nHome Wi-Fi router unreachable. Operating in standalone SoftAP mode."));
   }
 
   // Setup Root Mobile Dashboard Handler
@@ -773,6 +773,8 @@ void updateLCD() {
     }
     return;
   }
+
+  activeLcd->clear();
   switch (lcdScreenIndex) {
     case 0:
       // Overview Telemetry Screen (Hotspot & Line Current Load)
