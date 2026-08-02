@@ -22,6 +22,7 @@ interface TelemetryContextType {
   tempHistory: number[];
   currentHistory: number[];
   refreshTelemetry: () => Promise<void>;
+  silenceBuzzer: () => Promise<boolean>;
 }
 
 const TelemetryContext = createContext<TelemetryContextType | undefined>(undefined);
@@ -44,6 +45,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     humidity: 46,
     lineCurrent: 8.2,
     timestamp: "Just now",
+    safetyState: "NORMAL",
   });
 
   const [sensorStatus, setSensorStatus] = useState<SensorStatusState>({
@@ -69,6 +71,24 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
     wifiSignal: 88,
     storageUsage: 22,
   });
+
+  const silenceBuzzer = async (): Promise<boolean> => {
+    const success = await ApiService.silenceBuzzer();
+    if (success) {
+      toast.success("Buzzer Alarm Silenced", {
+        description: "Hardware buzzer muted. Power relay remains tripped for safety.",
+      });
+      setSensorMetrics((prev) => ({
+        ...prev,
+        safetyState: "ALARM_SILENCED",
+      }));
+    } else {
+      toast.error("Failed to silence buzzer", {
+        description: "Check ESP32 connection or Wi-Fi status.",
+      });
+    }
+    return success;
+  };
 
   const setMode = async (newMode: OperatingMode) => {
     setModeState(newMode);
@@ -204,6 +224,7 @@ export function TelemetryProvider({ children }: { children: React.ReactNode }) {
         tempHistory,
         currentHistory,
         refreshTelemetry,
+        silenceBuzzer,
       }}
     >
       {children}

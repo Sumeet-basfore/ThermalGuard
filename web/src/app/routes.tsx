@@ -32,7 +32,7 @@ function Shell() {
     "Dashboard";
 
   return (
-    <div className="min-h-screen bg-[#111318] font-[Inter] text-[#e2e2e9] flex flex-col">
+    <div className="flex flex-col md:flex-row h-screen w-screen bg-[#111318] font-[Inter] text-[#e2e2e9] overflow-hidden">
       <SidebarNav
         navItems={nav}
         secondaryNavItems={secondaryNav}
@@ -40,14 +40,14 @@ function Shell() {
         setOpen={setOpen}
       />
 
-      <main className="lg:ml-[240px] flex-1 flex flex-col min-h-screen bg-[#111318] overflow-x-hidden">
+      <main className="flex-1 flex flex-col h-full min-w-0 bg-[#111318] overflow-hidden">
         <TopHeader pageName={page} onOpenMobileMenu={() => setOpen(true)} />
 
         <div className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <Outlet />
         </div>
 
-        <footer className="min-h-8 py-1.5 sm:py-0 bg-[#0c0e13] border-t border-[#434655] flex flex-wrap items-center justify-between px-3 sm:px-6 font-['JetBrains_Mono'] text-[9px] sm:text-[10px] text-[#c3c6d7] uppercase gap-2">
+        <footer className="min-h-8 py-1.5 sm:py-0 bg-[#0c0e13] border-t border-[#434655] flex flex-wrap items-center justify-between px-3 sm:px-6 font-['JetBrains_Mono'] text-[9px] sm:text-[10px] text-[#c3c6d7] uppercase gap-2 flex-shrink-0">
           <div className="flex gap-3 sm:gap-6 items-center flex-wrap">
             <div className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#b4c5ff]"></span>
@@ -612,11 +612,11 @@ function Analytics() {
    4. ALERTS VIEW (alerts_incident_feed/code.html)
    ========================================================================= */
 function Alerts() {
-  const { mode } = useTelemetry();
+  const { mode, silenceBuzzer, sensorMetrics } = useTelemetry();
   const [incidents, setIncidents] = useState([
-    { id: 1, time: "2024-05-24 14:22:01.04", source: "MLX90640", desc: "Threshold Breach > 72.0C", level: "CRITICAL", ack: false },
-    { id: 2, time: "2024-05-24 14:21:45.82", source: "ACS712", desc: "Relay Interlock Trip - Overcurrent", level: "WARNING", ack: false },
-    { id: 3, time: "2024-05-24 14:19:12.11", source: "SYS_CORE", desc: "ADC Channel 34 Impedance Out of Range", level: "WARNING", ack: true },
+    { id: 1, time: "2026-08-02 14:22:01.04", source: "MLX90640", desc: "Threshold Breach > 72.0C", level: "CRITICAL", ack: false },
+    { id: 2, time: "2026-08-02 14:21:45.82", source: "ACS712", desc: "Relay Interlock Trip - Overcurrent", level: "WARNING", ack: false },
+    { id: 3, time: "2026-08-02 14:19:12.11", source: "SYS_CORE", desc: "ADC Channel 34 Impedance Out of Range", level: "WARNING", ack: true },
   ]);
 
   const playWebAudioBeep = () => {
@@ -709,10 +709,27 @@ function Alerts() {
         </div>
       </div>
 
-      <div className="col-span-12 lg:col-span-4 bg-[#111318] border border-[#434655] p-6 rounded">
-        <h3 className="font-[Inter] text-[11px] font-bold uppercase tracking-wider text-[#c3c6d7] mb-4">
-          GPIO 19: Buzzer Hardware Map
+      <div className="col-span-12 lg:col-span-4 bg-[#111318] border border-[#434655] p-6 rounded space-y-4">
+        <h3 className="font-[Inter] text-[11px] font-bold uppercase tracking-wider text-[#c3c6d7]">
+          GPIO 19: Buzzer & Interlock Controls
         </h3>
+
+        <div className="bg-[#1a1b21] p-3 rounded border border-[#434655]/60">
+          <p className="text-[11px] font-[Inter] text-[#c3c6d7]">Current FSM Safety State:</p>
+          <p className="font-['JetBrains_Mono'] text-[14px] font-bold text-[#b4c5ff] mt-0.5">
+            {sensorMetrics.safetyState || "NORMAL"}
+          </p>
+        </div>
+
+        {sensorMetrics.safetyState === "ALARM_ACTIVE" && (
+          <button
+            onClick={() => silenceBuzzer()}
+            className="w-full bg-[#ffb4ab] text-[#690005] py-3 rounded font-[Inter] text-[11px] font-bold uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-lg animate-bounce"
+          >
+            <span className="material-symbols-outlined text-[18px]">volume_off</span> Stop Buzzer Alarm
+          </button>
+        )}
+
         <button
           onClick={handleTestBuzzer}
           className="w-full bg-[#2563eb] text-[#eeefff] py-3 rounded font-[Inter] text-[11px] font-bold uppercase tracking-widest hover:brightness-110 transition-all flex items-center justify-center gap-2"
@@ -814,8 +831,11 @@ function Devices() {
    7. SETTINGS VIEW (system_settings_thresholds/code.html)
    ========================================================================= */
 function SettingsPage() {
-  const [tempThresh, setTempThresh] = useState("45");
-  const [currLimit, setCurrLimit] = useState("10");
+  const { sensorMetrics } = useTelemetry();
+  const [tempThresh, setTempThresh] = useState(String(sensorMetrics.tempThreshold || 45));
+  const [currLimit, setCurrLimit] = useState(String(sensorMetrics.currentLimit || 10));
+  const [graceDelay, setGraceDelay] = useState(String(sensorMetrics.graceDelaySec || 15));
+  const [spikeLimit, setSpikeLimit] = useState(String(sensorMetrics.spikeLimit || 4.0));
 
   const handleSave = async () => {
     try {
@@ -824,9 +844,11 @@ function SettingsPage() {
         currentLimit: parseFloat(currLimit),
         alarmDelay: 5,
         relayTripDelay: 2,
+        graceDelay: parseFloat(graceDelay),
+        spikeLimit: parseFloat(spikeLimit),
       });
       toast.success("EEPROM Parameters Saved", {
-        description: "Written safety threshold rules to ESP32 Flash memory.",
+        description: "Written dual-trigger FSM safety parameters to ESP32 Flash memory.",
       });
     } catch {
       toast.error("Save Failed", { description: "Could not write to ESP32 EEPROM." });
@@ -834,30 +856,67 @@ function SettingsPage() {
   };
 
   return (
-    <div className="bg-[#111318] border border-[#434655] p-6 max-w-xl rounded">
-      <h3 className="font-[Inter] text-[18px] font-bold text-[#e2e2e9]">Hardware Trip Thresholds</h3>
-      <div className="mt-4 space-y-4 font-[Inter] text-[14px]">
+    <div className="bg-[#111318] border border-[#434655] p-6 max-w-xl rounded shadow-xl">
+      <h3 className="font-[Inter] text-[18px] font-bold text-[#e2e2e9]">Dual-Trigger Safety Parameters</h3>
+      <p className="text-[12px] text-[#c3c6d7] mt-1 mb-4">
+        Configure persistent EEPROM trip rules, sustained thermal grace countdowns, and rate-of-rise thermal spike limits.
+      </p>
+
+      <div className="space-y-4 font-[Inter] text-[14px]">
         <label className="block">
-          <span className="text-[#c3c6d7] text-[12px]">Hotspot Trip Temp (°C)</span>
+          <span className="text-[#c3c6d7] text-[12px] font-medium">Hotspot Maximum Trip Temp (°C)</span>
           <input
+            type="number"
+            step="0.5"
             value={tempThresh}
             onChange={(e) => setTempThresh(e.target.value)}
-            className="w-full mt-1 bg-[#1a1b21] border border-[#434655] p-2 text-[#e2e2e9] font-['JetBrains_Mono'] rounded"
+            className="w-full mt-1 bg-[#1a1b21] border border-[#434655] p-2.5 text-[#e2e2e9] font-['JetBrains_Mono'] rounded focus:outline-none focus:border-[#2563eb]"
           />
+          <span className="text-[10px] text-[#c3c6d7]">Upper thermal threshold before warning countdown triggers.</span>
         </label>
+
         <label className="block">
-          <span className="text-[#c3c6d7] text-[12px]">Overcurrent Limit (A)</span>
+          <span className="text-[#c3c6d7] text-[12px] font-medium">Overcurrent Interlock Limit (A)</span>
           <input
+            type="number"
+            step="0.1"
             value={currLimit}
             onChange={(e) => setCurrLimit(e.target.value)}
-            className="w-full mt-1 bg-[#1a1b21] border border-[#434655] p-2 text-[#e2e2e9] font-['JetBrains_Mono'] rounded"
+            className="w-full mt-1 bg-[#1a1b21] border border-[#434655] p-2.5 text-[#e2e2e9] font-['JetBrains_Mono'] rounded focus:outline-none focus:border-[#2563eb]"
           />
+          <span className="text-[10px] text-[#c3c6d7]">Line current threshold for instantaneous relay trip.</span>
         </label>
+
+        <label className="block">
+          <span className="text-[#c3c6d7] text-[12px] font-medium">Sustained Heat Grace Countdown (Seconds)</span>
+          <input
+            type="number"
+            step="1"
+            value={graceDelay}
+            onChange={(e) => setGraceDelay(e.target.value)}
+            className="w-full mt-1 bg-[#1a1b21] border border-[#434655] p-2.5 text-[#e2e2e9] font-['JetBrains_Mono'] rounded focus:outline-none focus:border-[#2563eb]"
+          />
+          <span className="text-[10px] text-[#c3c6d7]">Grace duration machines can sustain over-temp before interlock trips.</span>
+        </label>
+
+        <label className="block">
+          <span className="text-[#c3c6d7] text-[12px] font-medium">Rate-of-Rise Thermal Spike Limit (°C / sec)</span>
+          <input
+            type="number"
+            step="0.5"
+            value={spikeLimit}
+            onChange={(e) => setSpikeLimit(e.target.value)}
+            className="w-full mt-1 bg-[#1a1b21] border border-[#434655] p-2.5 text-[#e2e2e9] font-['JetBrains_Mono'] rounded focus:outline-none focus:border-[#2563eb]"
+          />
+          <span className="text-[10px] text-[#c3c6d7]">Instant trip threshold if temperature rises faster than this rate.</span>
+        </label>
+
         <button
           onClick={handleSave}
-          className="px-4 py-2 bg-[#2563eb] text-[#eeefff] font-bold text-[12px] rounded hover:brightness-110 transition-all"
+          className="w-full mt-2 py-3 bg-[#2563eb] text-[#eeefff] font-bold text-[12px] rounded hover:brightness-110 transition-all flex items-center justify-center gap-2 shadow-lg"
         >
-          Save to ESP32 EEPROM
+          <span className="material-symbols-outlined text-[18px]">save</span>
+          Save Parameters to ESP32 Flash EEPROM
         </button>
       </div>
     </div>

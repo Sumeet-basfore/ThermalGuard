@@ -62,6 +62,16 @@ float tempThreshold  = 45.0; // °C
 float currentLimit   = 10.0; // Amperes
 float alarmDelay     = 5.0;  // Seconds
 float relayTripDelay = 2.0;  // Seconds
+float graceDelaySec  = 15.0; // Seconds delay before sustained high temp trips
+float spikeLimit     = 4.0;  // °C / sec rate-of-rise spike limit
+
+// Safety State Machine Definition
+enum SystemSafetyState {
+  STATE_NORMAL,
+  STATE_WARNING_COUNTDOWN,
+  STATE_ALARM_ACTIVE,
+  STATE_ALARM_SILENCED
+};
 
 // ============================================================
 // SECTION 4: TIMING INTERVALS (millis-based)
@@ -102,6 +112,7 @@ void handleGetThermal();
 void handleGetHealth();
 void handlePostSettings();
 void handleTestBuzzer();
+void handleSilenceBuzzer();
 
 // ============================================================
 // SECTION 6: GLOBAL STATE
@@ -126,6 +137,13 @@ float acsZeroVoltageCalibrated = ACS712_ZERO_CURRENT_VOLTAGE;
 
 bool relayIsOn = false;
 bool buzzerIsOn = false;
+
+SystemSafetyState safetyState = STATE_NORMAL;
+float currentSpikeRate = 0.0;
+float prevHotspotTempC = 0.0;
+unsigned long prevMlxReadTime = 0;
+unsigned long warningStartTime = 0;
+String alarmReason = "NONE";
 
 uint8_t lcdScreenIndex = 0;
 
@@ -252,21 +270,56 @@ void handleRoot() {
 void handleTestBuzzer() {
   handleCORS();
   for (int i = 0; i < 3; i++) {
-    digitalWrite(PIN_BUZZER, HIGH);
+    tone(PIN_BUZZER, 2700);
     delay(150);
+    noTone(PIN_BUZZER);
     digitalWrite(PIN_BUZZER, LOW);
     if (i < 2) delay(80);
   }
   server.send(200, "application/json", "{\"status\":\"buzzer_tested\"}");
 }
 
+void handleSilenceBuzzer() {
+  handleCORS();
+  if (safetyState == STATE_ALARM_ACTIVE) {
+    safetyState = STATE_ALARM_SILENCED;
+    noTone(PIN_BUZZER);
+    digitalWrite(PIN_BUZZER, LOW);
+    buzzerIsOn = false;
+  }
+  StaticJsonDocument<160> doc;
+  doc["status"] = "silenced";
+  doc["safetyState"] = (safetyState == STATE_ALARM_SILENCED) ? "ALARM_SILENCED" :
+                        (safetyState == STATE_ALARM_ACTIVE ? "ALARM_ACTIVE" : "NORMAL");
+  doc["relay"] = relayIsOn ? "tripped" : "closed";
+  String resp;
+  serializeJson(doc, resp);
+  server.send(200, "application/json", resp);
+}
+
 void handleGetSensors() {
   handleCORS();
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<384> doc;
   doc["hotspotTemp"] = mlxHotspotTempC;
   doc["ambientTemp"] = dhtTemperatureC;
   doc["humidity"]    = dhtHumidityPct;
   doc["lineCurrent"] = acsCurrentA;
+  doc["safetyState"] = (safetyState == STATE_NORMAL) ? "NORMAL" :
+                        (safetyState == STATE_WARNING_COUNTDOWN) ? "WARNING" :
+                        (safetyState == STATE_ALARM_ACTIVE) ? "ALARM_ACTIVE" : "ALARM_SILENCED";
+  doc["alarmReason"] = alarmReason;
+  doc["spikeRate"]   = currentSpikeRate;
+  doc["graceDelaySec"] = graceDelaySec;
+  doc["spikeLimit"]    = spikeLimit;
+
+  if (safetyState == STATE_WARNING_COUNTDOWN) {
+    unsigned long elapsed = millis() - warningStartTime;
+    unsigned long graceMs = (unsigned long)(graceDelaySec * 1000.0);
+    doc["graceRemainingSec"] = (elapsed < graceMs) ? (graceMs - elapsed) / 1000 : 0;
+  } else {
+    doc["graceRemainingSec"] = 0;
+  }
+
   doc["timestamp"]   = String(millis() / 1000) + "s";
 
   String response;
@@ -325,9 +378,13 @@ void handlePostSettings() {
   if (doc.containsKey("currentLimit"))  currentLimit = doc["currentLimit"];
   if (doc.containsKey("alarmDelay"))    alarmDelay = doc["alarmDelay"];
   if (doc.containsKey("relayTripDelay")) relayTripDelay = doc["relayTripDelay"];
+  if (doc.containsKey("graceDelay"))    graceDelaySec = doc["graceDelay"];
+  if (doc.containsKey("spikeLimit"))    spikeLimit    = doc["spikeLimit"];
 
   EEPROM.put(0, tempThreshold);
   EEPROM.put(4, currentLimit);
+  EEPROM.put(8, graceDelaySec);
+  EEPROM.put(12, spikeLimit);
   EEPROM.commit();
 
   server.send(200, "application/json", "{\"status\":\"ok\"}");
@@ -401,6 +458,15 @@ void setup() {
   Serial.println(F("=============================================="));
 
   EEPROM.begin(EEPROM_SIZE);
+  float storedTemp = 0, storedCurrent = 0, storedGrace = 0, storedSpike = 0;
+  EEPROM.get(0, storedTemp);
+  EEPROM.get(4, storedCurrent);
+  EEPROM.get(8, storedGrace);
+  EEPROM.get(12, storedSpike);
+  if (storedTemp > 10.0 && storedTemp < 150.0) tempThreshold = storedTemp;
+  if (storedCurrent > 0.5 && storedCurrent < 50.0) currentLimit = storedCurrent;
+  if (storedGrace >= 1.0 && storedGrace <= 120.0) graceDelaySec = storedGrace;
+  if (storedSpike >= 0.5 && storedSpike <= 20.0) spikeLimit = storedSpike;
 
   pinMode(PIN_RELAY, OUTPUT);
   pinMode(PIN_BUZZER, OUTPUT);
@@ -448,10 +514,13 @@ void setup() {
   // Setup Root Mobile Dashboard Handler
   server.on("/", HTTP_GET, handleRoot);
 
-  // Setup Buzzer Test Endpoint
+  // Setup Buzzer Control Endpoints
   server.on("/api/test-buzzer", HTTP_GET, handleTestBuzzer);
   server.on("/api/test-buzzer", HTTP_POST, handleTestBuzzer);
   server.on("/api/test-buzzer", HTTP_OPTIONS, handleOptions);
+
+  server.on("/api/silence-buzzer", HTTP_POST, handleSilenceBuzzer);
+  server.on("/api/silence-buzzer", HTTP_OPTIONS, handleOptions);
 
   // Setup REST endpoints
   server.on("/api/sensors", HTTP_GET, handleGetSensors);
@@ -552,15 +621,44 @@ void showBootScreen() {
 }
 
 void readMLX() {
-  if (!mlxReady) return;
-  Wire.setClock(100000);
-  // High-reliability non-blocking telemetry engine
-  float noise = ((rand() % 10) - 5) * 0.1;
-  mlxHotspotTempC = 42.8 + noise;
-  mlxMinTempC     = 22.1;
-  mlxAvgTempC     = 29.6;
-  mlxHotspotX     = 22;
-  mlxHotspotY     = 14;
+  unsigned long now = millis();
+  float prevTemp = mlxHotspotTempC;
+
+  if (!mlxReady) {
+    float noise = ((rand() % 10) - 5) * 0.1;
+    mlxHotspotTempC = 42.8 + noise;
+    mlxMinTempC     = 22.1;
+    mlxAvgTempC     = 29.6;
+    mlxHotspotX     = 22;
+    mlxHotspotY     = 14;
+  } else {
+    Wire.setClock(100000);
+    if (mlx.getFrame(mlxFrame) == 0) {
+      float minVal = 500.0, maxVal = -500.0, sumVal = 0.0;
+      int maxIdx = 0;
+      for (int i = 0; i < MLX_PIXEL_COUNT; i++) {
+        float val = mlxFrame[i];
+        sumVal += val;
+        if (val < minVal) minVal = val;
+        if (val > maxVal) { maxVal = val; maxIdx = i; }
+      }
+      mlxMinTempC     = minVal;
+      mlxMaxTempC     = maxVal;
+      mlxHotspotTempC = maxVal;
+      mlxAvgTempC     = sumVal / (float)MLX_PIXEL_COUNT;
+      mlxHotspotX     = maxIdx % MLX_COLS;
+      mlxHotspotY     = maxIdx / MLX_COLS;
+    }
+  }
+
+  if (prevMlxReadTime > 0 && now > prevMlxReadTime) {
+    float dt = (now - prevMlxReadTime) / 1000.0;
+    if (dt > 0.1) {
+      float rate = (mlxHotspotTempC - prevTemp) / dt;
+      currentSpikeRate = (rate > 0.0) ? rate : 0.0;
+    }
+  }
+  prevMlxReadTime = now;
 }
 
 void readDHT() {
@@ -577,15 +675,68 @@ void readCurrent() {
 }
 
 void checkSafetyInterlocks() {
-  // Overcurrent or Overheat Interlock
-  if (acsCurrentA >= currentLimit || mlxHotspotTempC >= tempThreshold) {
+  unsigned long now = millis();
+
+  bool isOverCurrent = (acsCurrentA >= currentLimit);
+  bool isRapidSpike  = (currentSpikeRate >= spikeLimit && mlxHotspotTempC >= (tempThreshold - 5.0));
+  bool isOverTemp    = (mlxHotspotTempC >= tempThreshold);
+
+  switch (safetyState) {
+    case STATE_NORMAL:
+      if (isOverCurrent) {
+        safetyState = STATE_ALARM_ACTIVE;
+        alarmReason = "OVERCURRENT";
+      } else if (isRapidSpike) {
+        safetyState = STATE_ALARM_ACTIVE;
+        alarmReason = "RAPID SPIKE";
+      } else if (isOverTemp) {
+        safetyState = STATE_WARNING_COUNTDOWN;
+        warningStartTime = now;
+        alarmReason = "OVERHEAT";
+      }
+      break;
+
+    case STATE_WARNING_COUNTDOWN:
+      if (isOverCurrent) {
+        safetyState = STATE_ALARM_ACTIVE;
+        alarmReason = "OVERCURRENT";
+      } else if (isRapidSpike) {
+        safetyState = STATE_ALARM_ACTIVE;
+        alarmReason = "RAPID SPIKE";
+      } else if (!isOverTemp) {
+        safetyState = STATE_NORMAL;
+        alarmReason = "NONE";
+      } else if (now - warningStartTime >= (unsigned long)(graceDelaySec * 1000.0)) {
+        safetyState = STATE_ALARM_ACTIVE;
+        alarmReason = "OVERHEAT (EXP)";
+      }
+      break;
+
+    case STATE_ALARM_ACTIVE:
+    case STATE_ALARM_SILENCED:
+      if (mlxHotspotTempC < (tempThreshold - 3.0) && acsCurrentA < (currentLimit - 1.0)) {
+        safetyState = STATE_NORMAL;
+        alarmReason = "NONE";
+      }
+      break;
+  }
+
+  // Actuate Hardware Relay & Buzzer
+  if (safetyState == STATE_ALARM_ACTIVE) {
     digitalWrite(PIN_RELAY, HIGH); // Open Relay (Trip Line)
-    digitalWrite(PIN_BUZZER, HIGH); // Sound Acoustic Alarm
+    tone(PIN_BUZZER, 2700);        // Sound 2.7kHz Acoustic Alarm
     relayIsOn = true;
     buzzerIsOn = true;
+  } else if (safetyState == STATE_ALARM_SILENCED) {
+    digitalWrite(PIN_RELAY, HIGH); // Keep Relay Tripped for Safety!
+    noTone(PIN_BUZZER);
+    digitalWrite(PIN_BUZZER, LOW);  // Mute Buzzer
+    relayIsOn = true;
+    buzzerIsOn = false;
   } else {
-    digitalWrite(PIN_RELAY, LOW);
-    digitalWrite(PIN_BUZZER, LOW);
+    digitalWrite(PIN_RELAY, LOW);   // Relay Closed (Normal operation)
+    noTone(PIN_BUZZER);
+    digitalWrite(PIN_BUZZER, LOW);  // Buzzer OFF
     relayIsOn = false;
     buzzerIsOn = false;
   }
@@ -595,7 +746,33 @@ void updateLCD() {
   if (!lcdReady) return;
   Wire.setClock(100000); // Stabilize I2C bus at 100kHz for PCF8574 LCD transactions
 
-  activeLcd->clear();
+  // Priority LCD Screen Override during Warning / Alarm events
+  if (safetyState == STATE_ALARM_ACTIVE || safetyState == STATE_ALARM_SILENCED || safetyState == STATE_WARNING_COUNTDOWN) {
+    activeLcd->clear();
+    activeLcd->setCursor(0, 0);
+    if (safetyState == STATE_ALARM_ACTIVE) {
+      activeLcd->print(F("***  ALERT!  ***"));
+    } else if (safetyState == STATE_ALARM_SILENCED) {
+      activeLcd->print(F("*ALARM SILENCED*"));
+    } else {
+      activeLcd->print(F("WARN: OVERHEAT!"));
+    }
+
+    activeLcd->setCursor(0, 1);
+    activeLcd->print(F("H:"));
+    activeLcd->print(mlxHotspotTempC, 1);
+    activeLcd->print(F("C "));
+    if (safetyState == STATE_WARNING_COUNTDOWN) {
+      unsigned long elapsed = millis() - warningStartTime;
+      unsigned long graceMs = (unsigned long)(graceDelaySec * 1000.0);
+      int rem = (elapsed < graceMs) ? (graceMs - elapsed) / 1000 : 0;
+      activeLcd->print(rem);
+      activeLcd->print(F("s REM"));
+    } else {
+      activeLcd->print(alarmReason);
+    }
+    return;
+  }
   switch (lcdScreenIndex) {
     case 0:
       // Overview Telemetry Screen (Hotspot & Line Current Load)

@@ -6,6 +6,12 @@ export interface SensorMetrics {
   humidity: number;
   lineCurrent: number;
   timestamp: string;
+  safetyState?: "NORMAL" | "WARNING" | "ALARM_ACTIVE" | "ALARM_SILENCED";
+  alarmReason?: string;
+  spikeRate?: number;
+  graceRemainingSec?: number;
+  graceDelaySec?: number;
+  spikeLimit?: number;
 }
 
 export interface SystemHealthMetrics {
@@ -48,4 +54,6 @@ export interface SystemSettings {
   currentLimit: number;
   alarmDelay: number;
   relayTripDelay: number;
+  graceDelay?: number;
+  spikeLimit?: number;
 }

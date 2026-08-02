@@ -10,10 +10,19 @@ export interface TopHeaderProps {
 }
 
 export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
-  const { mode, setMode, isOnline, hasError, refreshTelemetry } = useTelemetry();
+  const { mode, setMode, isOnline, hasError, refreshTelemetry, sensorMetrics, silenceBuzzer } = useTelemetry();
   const [isPresentation, setIsPresentation] = useState(false);
   const [showIpModal, setShowIpModal] = useState(false);
   const [gatewayIp, setGatewayIp] = useState(getApiIp());
+  const [isSilencing, setIsSilencing] = useState(false);
+
+  const handleSilence = async () => {
+    setIsSilencing(true);
+    await silenceBuzzer();
+    setIsSilencing(false);
+  };
+
+  const safetyState = sensorMetrics.safetyState || "NORMAL";
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -136,6 +145,53 @@ export function TopHeader({ pageName, onOpenMobileMenu }: TopHeaderProps) {
           </div>
         </div>
       </header>
+
+      {/* Emergency Safety Alert Banner */}
+      {safetyState === "ALARM_ACTIVE" && (
+        <div className="w-full bg-[#ffb4ab]/15 border-b-2 border-[#ffb4ab] px-4 py-3 flex flex-wrap items-center justify-between gap-3 animate-pulse">
+          <div className="flex items-center gap-3">
+            <span className="material-symbols-outlined text-[#ffb4ab] text-[24px]">warning</span>
+            <div>
+              <p className="font-[Inter] text-[13px] font-bold text-[#ffb4ab]">
+                ALERT! SAFETY HARDWARE INTERLOCK TRIPPED
+              </p>
+              <p className="font-[Inter] text-[11px] text-[#e2e2e9]">
+                Trigger Reason: <span className="font-bold text-[#ff8080]">{sensorMetrics.alarmReason || "THERMAL OVERHEAT"}</span> | Relay Tripped | Buzzer Sounding at 2.7kHz
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleSilence}
+            disabled={isSilencing}
+            className="px-4 py-2 bg-[#ffb4ab] text-[#690005] font-[Inter] text-[12px] font-bold rounded-lg shadow-lg hover:brightness-110 flex items-center gap-2 transition-transform active:scale-95"
+          >
+            <span className="material-symbols-outlined text-[18px]">volume_off</span>
+            {isSilencing ? "Muting..." : "STOP BUZZER / SILENCE ALARM"}
+          </button>
+        </div>
+      )}
+
+      {safetyState === "ALARM_SILENCED" && (
+        <div className="w-full bg-[#e2e2e9]/10 border-b border-[#c3c6d7]/30 px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#c3c6d7] text-[20px]">volume_off</span>
+            <p className="font-[Inter] text-[12px] font-medium text-[#e2e2e9]">
+              <span className="font-bold text-[#b4c5ff]">[ALARM SILENCED]</span> Acoustic Buzzer Muted — Power Interlock Relay Remains Open/Tripped.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {safetyState === "WARNING" && (
+        <div className="w-full bg-[#ffb4ab]/10 border-b border-[#ffb4ab]/40 px-4 py-2 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#ffb4ab] text-[20px]">timer</span>
+            <p className="font-[Inter] text-[12px] font-medium text-[#e2e2e9]">
+              <span className="font-bold text-[#ffb4ab]">SUSTAINED HEAT WARNING:</span> Machine exceeded max temperature ({sensorMetrics.hotspotTemp}°C). Grace countdown: <span className="font-bold text-[#ffb4ab]">{sensorMetrics.graceRemainingSec ?? 0}s</span> remaining before relay trip.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ESP32 IP Configure Modal */}
       {showIpModal && (

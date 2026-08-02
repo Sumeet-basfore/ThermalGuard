@@ -89,11 +89,11 @@ export const DesktopSidebar = ({
   return (
     <motion.div
       className={cn(
-        "h-full px-3 py-4 hidden md:flex md:flex-col bg-[#111318] border-r border-[#434655]/60 flex-shrink-0 z-30 transition-colors duration-200",
+        "h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[300px] flex-shrink-0",
         className
       )}
       animate={{
-        width: animate ? (open ? "260px" : "68px") : "260px",
+        width: animate ? (open ? "300px" : "60px") : "300px",
       }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
@@ -114,21 +114,13 @@ export const MobileSidebar = ({
     <>
       <div
         className={cn(
-          "h-12 px-4 py-3 flex flex-row md:hidden items-center justify-between bg-[#111318] border-b border-[#434655]/60 w-full"
+          "h-10 px-4 py-4 flex flex-row md:hidden items-center justify-between bg-neutral-100 dark:bg-neutral-800 w-full"
         )}
         {...props}
       >
-        <div className="flex justify-between items-center z-20 w-full">
-          <div className="flex items-center gap-2">
-            <img
-              src="/Logo.jpeg"
-              alt="ThermalGuard"
-              className="w-7 h-7 rounded-md object-cover border border-[#434655]"
-            />
-            <span className="font-[Inter] text-base font-bold text-[#e2e2e9]">ThermalGuard</span>
-          </div>
+        <div className="flex justify-end z-20 w-full">
           <Menu
-            className="text-[#c3c6d7] hover:text-white cursor-pointer w-6 h-6"
+            className="text-neutral-800 dark:text-neutral-200 cursor-pointer"
             onClick={() => setOpen(!open)}
           />
         </div>
@@ -139,19 +131,19 @@ export const MobileSidebar = ({
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: "-100%", opacity: 0 }}
               transition={{
-                duration: 0.25,
+                duration: 0.3,
                 ease: "easeInOut",
               }}
               className={cn(
-                "fixed h-full w-3/4 max-w-[300px] inset-y-0 left-0 bg-[#111318] border-r border-[#434655] p-6 z-[100] flex flex-col justify-between shadow-2xl",
+                "fixed h-full w-full inset-0 bg-white dark:bg-neutral-900 p-10 z-[100] flex flex-col justify-between",
                 className
               )}
             >
               <div
-                className="absolute right-5 top-5 z-50 text-[#c3c6d7] hover:text-white cursor-pointer p-1 rounded-md bg-[#1e2028]"
+                className="absolute right-10 top-10 z-50 text-neutral-800 dark:text-neutral-200 cursor-pointer"
                 onClick={() => setOpen(!open)}
               >
-                <X className="w-5 h-5" />
+                <X />
               </div>
               {children}
             </motion.div>
@@ -179,20 +171,18 @@ export const SidebarLink = ({
       to={link.href}
       onClick={onClick}
       className={cn(
-        "flex items-center justify-start gap-3 group/sidebar py-2 px-2.5 rounded-lg transition-all duration-150 relative overflow-hidden",
+        "flex items-center justify-start gap-2 group/sidebar py-2",
         className
       )}
       {...props}
     >
-      <div className="w-7 h-7 flex items-center justify-center shrink-0">
-        {link.icon}
-      </div>
+      {link.icon}
       <motion.span
         animate={{
           display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
-        className="text-[#c3c6d7] group-hover/sidebar:text-[#e2e2e9] text-sm font-medium transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+        className="text-neutral-700 dark:text-neutral-200 text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
       >
         {link.label}
       </motion.span>

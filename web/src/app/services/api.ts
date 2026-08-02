@@ -288,6 +288,25 @@ export class ApiService {
   }
 
   /**
+   * Silences active physical ESP32 GPIO 19 Buzzer alarm while maintaining relay trip safety.
+   */
+  public static async silenceBuzzer(): Promise<boolean> {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const response = await fetch(`${getBaseUrl()}/silence-buzzer`, {
+        method: "POST",
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response.ok;
+    } catch (err) {
+      console.warn("[API Service] Silence buzzer call failed or offline", err);
+      return false;
+    }
+  }
+
+  /**
    * Sends protective threshold updates to ESP32 Flash EEPROM.
    */
   public static async saveSettings(settings: SystemSettings): Promise<boolean> {
